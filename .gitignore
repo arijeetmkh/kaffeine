@@ -1,0 +1,8 @@
+env-project-kaffeine/
+.idea
+.idea/
+*.ipr
+*.iml
+*.iws
+.shell_history
+*.pyc

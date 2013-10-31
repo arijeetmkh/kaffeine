@@ -1,6 +1,7 @@
 Django==1.5.4
 argparse==1.2.1
 astroid==1.0.1
+elasticsearch
 ipython==1.1.0
 logilab-common==0.60.0
 lucene-querybuilder==0.2
@@ -11,3 +12,4 @@ pylint==1.0.0
 pymongo==2.6.3
 pytz==2013b
 wsgiref==0.1.2
+yolk

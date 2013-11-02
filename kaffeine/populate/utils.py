@@ -71,13 +71,10 @@ def create_and_or_link_cuisine(restaurant, subzone, cuisines=()):
         cuisine_found = False
         for cuisine_node in cuisine_nodes:
 
-            try:
-                subzone.serves.relationship(cuisine_node)
+            if subzone.serves.is_connected(cuisine_node):
                 restaurant.serves.connect(cuisine_node)
                 cuisine_found = True
                 break
-            except IndexError:
-                pass
 
         if not cuisine_found:
             new_cuisine_node = pm.Cuisine(name=cuisine, subzone=subzone.name).save()

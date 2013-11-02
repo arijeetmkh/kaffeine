@@ -84,6 +84,7 @@ class Subzone(StructuredNode):
     near = RelationshipFrom('Restaurant', 'NEAR', model=NearRel)
     serves = RelationshipTo('Cuisine', 'SERVES', model=ServesRel)
 
+
 class Cuisine(StructuredNode):
     """
     Metadata for cuisine node assets
@@ -99,4 +100,4 @@ class Cuisine(StructuredNode):
     name = StringProperty(index=True)
     subzone = StringProperty()
 
-    serves = RelationshipFrom(['Restaurant', 'Subzone'], 'SERVERS', model=ServesRel)
+    serves = RelationshipFrom(['Restaurant', 'Subzone'], 'SERVES', model=ServesRel)

@@ -20,8 +20,8 @@ class Command(BaseCommand):
 
         print "Starting Population..."
 
-        for record in Items.objects.all():
-
+        for i,record in enumerate(Items.objects.all()):
+            print i
             try:
                 restaurant = pu.restaurant_node(record)
                 subzone = pu.create_and_or_link_subzone(restaurant, record.subzone)

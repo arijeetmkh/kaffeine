@@ -50,7 +50,7 @@ def create_and_or_link_subzone(restaurant, res_subzone):
         subzone.lon = float(restaurant.lon)
 
     subzone.save()
-    restaurant.near.connect(subzone)
+    restaurant.restaurant_near_subzone.connect(subzone)
 
     return subzone
 
@@ -67,16 +67,16 @@ def create_and_or_link_cuisine(restaurant, subzone, cuisines=()):
     """
 
     for cuisine in cuisines:
-        cuisine_nodes = pm.Cuisine.index.search(name=cuisine)
+        #cuisine_nodes = pm.Cuisine.index.search(name=cuisine)
         cuisine_found = False
-        for cuisine_node in cuisine_nodes:
+        for cuisine_node in pm.Cuisine.index.search(name=cuisine):
 
-            if subzone.serves.is_connected(cuisine_node):
-                restaurant.serves.connect(cuisine_node)
+            if subzone.subzone_serves_cuisine.is_connected(cuisine_node):
+                restaurant.restaurant_serves_cuisine.connect(cuisine_node)
                 cuisine_found = True
                 break
 
         if not cuisine_found:
             new_cuisine_node = pm.Cuisine(name=cuisine, subzone=subzone.name).save()
-            restaurant.serves.connect(new_cuisine_node)
-            subzone.serves.connect(new_cuisine_node)
+            restaurant.restaurant_serves_cuisine.connect(new_cuisine_node)
+            subzone.subzone_serves_cuisine.connect(new_cuisine_node)

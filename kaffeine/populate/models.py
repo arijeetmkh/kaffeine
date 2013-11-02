@@ -47,8 +47,8 @@ class Restaurant(StructuredNode):
         latlon: Restaurant latlon(String, Comma separated values lat,lon)
 
     Relation Attributes:
-        near: Outgoing relationship to subzone
-        serves: Outgoing relationship to cuisine
+        restaurant_near_subzone: Outgoing relationship to subzone
+        restaurant_serves_cuisine: Outgoing relationship to cuisine
     """
 
     id = StringProperty(unique_index=True, required=True)
@@ -60,8 +60,8 @@ class Restaurant(StructuredNode):
     lat = FloatProperty()
     lon = FloatProperty()
 
-    near = RelationshipTo('Subzone', 'NEAR', model=NearRel)
-    serves = RelationshipTo('Cuisine', 'SERVES', model=ServesRel)
+    restaurant_near_subzone = RelationshipTo('Subzone', 'NEAR', model=NearRel)
+    restaurant_serves_cuisine = RelationshipTo('Cuisine', 'SERVES', model=ServesRel)
 
 
 class Subzone(StructuredNode):
@@ -73,16 +73,16 @@ class Subzone(StructuredNode):
         latlon: Average latlon of restaurant in the subzone
 
     Relation Attributes:
-        near: Receiving relationship from Restaurant
-        serves: Outgoing relationship to Cuisine
+        subzone_near_restaurant: Receiving relationship from Restaurant
+        subzone_serves_cuisine: Outgoing relationship to Cuisine
     """
 
     name = StringProperty(unique_index=True, required=True)
     lat = FloatProperty()
     lon = FloatProperty()
 
-    near = RelationshipFrom('Restaurant', 'NEAR', model=NearRel)
-    serves = RelationshipTo('Cuisine', 'SERVES', model=ServesRel)
+    subzone_near_restaurant = RelationshipFrom('Restaurant', 'NEAR', model=NearRel)
+    subzone_serves_cuisine = RelationshipTo('Cuisine', 'SERVES', model=ServesRel)
 
 
 class Cuisine(StructuredNode):
@@ -94,10 +94,10 @@ class Cuisine(StructuredNode):
         subzone: Subzone to which the cuisine belongs to (String)
 
     Relation Attributes:
-        serves: Receiving relationship from Restaurant and Subzone
+        cuisine_serves: Receiving relationship from Restaurant and Subzone
     """
 
     name = StringProperty(index=True)
     subzone = StringProperty()
 
-    serves = RelationshipFrom(['Restaurant', 'Subzone'], 'SERVES', model=ServesRel)
+    cuisine_serves = RelationshipFrom(['Restaurant', 'Subzone'], 'SERVES', model=ServesRel)

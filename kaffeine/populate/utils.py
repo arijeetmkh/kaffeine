@@ -67,7 +67,6 @@ def create_and_or_link_cuisine(restaurant, subzone, cuisines=()):
     """
 
     for cuisine in cuisines:
-        #cuisine_nodes = pm.Cuisine.index.search(name=cuisine)
         cuisine_found = False
         for cuisine_node in pm.Cuisine.index.search(name=cuisine):
 
@@ -80,3 +79,23 @@ def create_and_or_link_cuisine(restaurant, subzone, cuisines=()):
             new_cuisine_node = pm.Cuisine(name=cuisine, subzone=subzone.name).save()
             restaurant.restaurant_serves_cuisine.connect(new_cuisine_node)
             subzone.subzone_serves_cuisine.connect(new_cuisine_node)
+
+def create_and_or_link_features(restaurant, subzone, features=()):
+
+    """
+    Based on number of features available at the restaurant,
+    create or find the feature connected to the subzone and
+    complete connections from restaurant, subzone to feature node
+    :param restaurant: The current restaurant node object
+    :param subzone: The current subzone node object
+    :param features: List of features for the restaurant
+    """
+
+    for feature in features:
+        try:
+            feature_node = subzone.traverse('subzone_has_feature').where('name', '=', feature).limit(1).run()[0]
+        except IndexError:
+            feature_node = pm.Feature(name=feature).save()
+            subzone.subzone_has_feature.connect(feature_node)
+        finally:
+            restaurant.restaurant_has_feature.connect(feature_node)

@@ -1,5 +1,5 @@
 from . import models as pm
-import requests
+import requests, elasticsearch
 from uuid import uuid4
 
 feature_list = [
@@ -20,6 +20,7 @@ def generate_geoff():
 
     g = open('populate.geoff', 'w')
     restaurant_batch_insert = []
+    subzone_batch_insert = []
     for record in pm.Items.objects.all():
         _id = uuid4().hex
         #Create restaurant node
@@ -30,6 +31,7 @@ def generate_geoff():
         g.write('("{restaurant_name}")-[:NEAR]->("{subzone_name}")\n'.format(restaurant_name=record.name + "__" + _id, subzone_name=record.subzone))
 
         restaurant_batch_insert.append(pm.RestaurantStatic(id=_id, name=record.name, timings=record.timings, phone=record.phone, cost=record.cost, address=record.address))
+        subzone_batch_insert.append(record.subzone)
 
         #Create cuisine node if required
         for cuisine in record.cuisines:
@@ -46,6 +48,17 @@ def generate_geoff():
     payload = open('populate.geoff', 'r')
     response = requests.post('http://127.0.0.1:7474/load2neo/load/geoff', data=payload)
     payload.close()
+
+    es = elasticsearch.Elasticsearch()
+    for i,subzone in enumerate(list(set(subzone_batch_insert)),1):
+        es.index(
+            index="subzone",
+            doc_type="static",
+            id=i,
+            body={
+                "name":subzone
+            }
+        )
 
     print pm.RestaurantStatic.objects.insert(restaurant_batch_insert)
     print response.status_code

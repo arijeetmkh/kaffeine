@@ -6,3 +6,4 @@ env-project-kaffeine/
 *.iws
 .shell_history
 *.pyc
+*.geoff

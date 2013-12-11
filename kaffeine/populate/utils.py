@@ -1,101 +1,52 @@
 from . import models as pm
-
+import requests
 from uuid import uuid4
 
-
-def restaurant_node(record):
-
-    """
-    Create and save a restaurant node.
-    :param record: Mongo record containing raw data
-    :return: Restaurant object (node)
-    """
-    obj = pm.Restaurant(id=uuid4().hex, name=record.name)
-    obj.address = record.address
-    if len(record.latlon) == 2:
-        obj.lat = record.latlon[0]
-        obj.lon = record.latlon[1]
-    else:
-        obj.lat = None
-        obj.lon = None
-    if record.phone != -1:
-        obj.phone = record.phone
-    obj.rating = record.rating
-    obj.timings = record.timings
-    obj.save()
-
-    return obj
+feature_list = [
+        "Dine-In Available",
+        "Home Delivery",
+        "Serves Non Veg",
+        "Bar Available",
+        "Seating Available",
+        "Air Conditioned",
+        "Outdoor Seating",
+        "Wifi Internet Available",
+        "Smoking Area",
+        "Sheesha"
+    ]
 
 
-def create_and_or_link_subzone(restaurant, res_subzone):
+def generate_geoff():
 
-    """
-    Find the restaurant subzone OR create it, and link it with a restaurant
-    :param restaurant: Restaurant node object
-    :param res_subzone: Subzone string of restaurant
-    :return: connect relationship object
-    """
-    subzone = pm.Subzone.index.search(name=res_subzone)
+    g = open('populate.geoff', 'w')
+    restaurant_batch_insert = []
+    for record in pm.Items.objects.all():
+        _id = uuid4().hex
+        #Create restaurant node
+        g.write('("{node_name}__{_id}":Restaurant {{"name":"{node_name}", "_id":"{_id}"}})\n'.format(node_name=record.name, _id=_id))
+        #Create subzone node
+        g.write('("{node_name}":Subzone!name {{"name":"{node_name}"}})\n'.format(node_name=record.subzone))
+        #Connect Restaurant with Subzone
+        g.write('("{restaurant_name}")-[:NEAR]->("{subzone_name}")\n'.format(restaurant_name=record.name + "__" + _id, subzone_name=record.subzone))
 
-    if not subzone:
-        subzone = pm.Subzone(name=res_subzone)
-    else:
-        subzone = subzone[0]
+        restaurant_batch_insert.append(pm.RestaurantStatic(id=_id, name=record.name, timings=record.timings, phone=record.phone, cost=record.cost, address=record.address))
 
-    if restaurant.lat and restaurant.lon and isinstance(subzone.lat, float) and isinstance(subzone.lon, float):
-        subzone.lat = (float(subzone.lat) + float(restaurant.lat))/2
-        subzone.lon = (float(subzone.lon) + float(restaurant.lon))/2
-    elif restaurant.lat and restaurant.lon and isinstance(subzone.lat, pm.FloatProperty) and isinstance(subzone.lon, pm.FloatProperty):
-        subzone.lat = float(restaurant.lat)
-        subzone.lon = float(restaurant.lon)
+        #Create cuisine node if required
+        for cuisine in record.cuisines:
+            g.write('("{cuisine}__{subzone}":Cuisine:"{cuisine}" {{"subzone":"{subzone}", "name":"{cuisine}"}})\n'.format(cuisine=cuisine, subzone=record.subzone))
+            g.write('("{cuisine}__{subzone}")<-[:SERVES!]-("{subzone}")\n'.format(cuisine=cuisine, subzone=record.subzone))
+            g.write('("{restaurant_name}__{_id}")-[:SERVES]->("{cuisine}__{subzone}")\n'.format(restaurant_name=record.name, _id=_id, cuisine=cuisine, subzone=record.subzone))
 
-    subzone.save()
-    restaurant.restaurant_near_subzone.connect(subzone)
+        for feature in list(set(feature_list).intersection(set(record.highlights + record.tags))):
+            g.write('("{feature}__{subzone}":Feature:"{feature}" {{"name":"{feature}"}})\n'.format(feature=feature, subzone=record.subzone))
+            g.write('("{feature}__{subzone}")<-[:HAS]-("{subzone}")\n'.format(feature=feature, subzone=record.subzone))
+            g.write('("{restaurant_name}__{_id}")-[:HAS]->("{feature}__{subzone}")\n'.format(restaurant_name=record.name, _id=_id, feature=feature, subzone=record.subzone))
 
-    return subzone
+    g.close()
+    payload = open('populate.geoff', 'r')
+    response = requests.post('http://127.0.0.1:7474/load2neo/load/geoff', data=payload)
+    payload.close()
 
-
-def create_and_or_link_cuisine(restaurant, subzone, cuisines=()):
-
-    """
-    Based on number of cuisines available at the restaurant,
-    create or find the cuisine connected to the subzone and
-    complete connections from restaurant, subzone to cuisine node
-    :param cuisines: Iterable cuisines served by restaurant
-    :param restaurant: The restaurant node
-    :param subzone: The subzone node
-    """
-
-    for cuisine in cuisines:
-        cuisine_found = False
-        for cuisine_node in pm.Cuisine.index.search(name=cuisine):
-
-            if subzone.subzone_serves_cuisine.is_connected(cuisine_node):
-                restaurant.restaurant_serves_cuisine.connect(cuisine_node)
-                cuisine_found = True
-                break
-
-        if not cuisine_found:
-            new_cuisine_node = pm.Cuisine(name=cuisine, subzone=subzone.name).save()
-            restaurant.restaurant_serves_cuisine.connect(new_cuisine_node)
-            subzone.subzone_serves_cuisine.connect(new_cuisine_node)
-
-def create_and_or_link_features(restaurant, subzone, features=()):
-
-    """
-    Based on number of features available at the restaurant,
-    create or find the feature connected to the subzone and
-    complete connections from restaurant, subzone to feature node
-    :param restaurant: The current restaurant node object
-    :param subzone: The current subzone node object
-    :param features: List of features for the restaurant
-    """
-
-    for feature in features:
-        try:
-            feature_node = subzone.traverse('subzone_has_feature').where('name', '=', feature).limit(1).run()[0]
-        except IndexError:
-            feature_node = pm.Feature(name=feature).save()
-            subzone.subzone_has_feature.connect(feature_node)
-        finally:
-            restaurant.restaurant_has_feature.connect(feature_node)
+    print pm.RestaurantStatic.objects.insert(restaurant_batch_insert)
+    print response.status_code
+    print response.text

@@ -12,7 +12,8 @@ feature_list = [
         "Outdoor Seating",
         "Wifi Internet Available",
         "Smoking Area",
-        "Sheesha"
+        "Sheesha",
+        "Live Music"
     ]
 
 
@@ -57,6 +58,16 @@ def generate_geoff():
             id=i,
             body={
                 "name":subzone
+            }
+        )
+
+    for i,cuisine in enumerate(pm.Items.objects.distinct('cuisines')):
+        es.index(
+            index="cuisine",
+            doc_type="static",
+            id=i,
+            body={
+                "name":cuisine
             }
         )
 

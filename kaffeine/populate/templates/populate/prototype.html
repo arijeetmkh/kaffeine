@@ -1,0 +1,28 @@
+<!doctype html>
+<html ng-app="SearchApp">
+  <head>
+    <script type="text/javascript" src="angular.min.js"></script>
+    <script type="text/javascript" src="search.js"></script>
+
+  </head>
+  <body>
+    <div ng-controller="searchCtrl">
+        <panel callfunc="makeCall(message, number, network)" number="9911" network="network" ></panel>
+        <panel callfunc="makeCall(message, number, network)" number="9868" network="network"></panel>
+        <panel callfunc="makeCall(message, number, network)" number="9650" network="network"></panel>
+
+    </div>
+
+    <div ng-controller="autoSuggest">
+        {{ tagger.meta.q }} <input type="text" ng-model="model.inputPhrase" ng-change="sendRequest(model.inputPhrase)">
+        <br>
+        <div>
+            <ul>
+                <li ng-repeat="result in results" ng-click="confirmTag(result.name, result.index)">{{ result.name }} ({{ result.index|capitalize }}) {{ count }}</li>
+            </ul>
+            <span ng-model="results">{{ results }}</span>
+        </div>
+    </div>
+
+  </body>
+</html>

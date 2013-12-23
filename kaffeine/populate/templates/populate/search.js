@@ -95,15 +95,17 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
             "last_token":{
                 "token":null, "type":null
             }
+
         },
         'Restaurant':null,
         'Subzone':null,
-        'Cuisine':null
+        'Cuisine':null,
+        'Feature':null
     };
 
     $scope.sendRequest = function(inputPhrase) {
 
-        if (inputPhrase.length <=1) {
+        if (inputPhrase.length <=1 || ($scope.tagger.meta.last_token.type && $scope.tagger.meta.last_token.type != "Rel")) {
             return;
         }
 
@@ -115,16 +117,10 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
         }
 
 
-        if ($scope.tagger.meta.last_token.type != "Rel") {
-            args.label = $scope.tagger.meta.last_token.type;
-        }
-
-
         xhrFactory.searchService(args)
 //        xhrFactory.searchService($filter('lowercase')(inputPhrase), null)
             .then(function(data) {
                 $scope.results = data;
-                console.log(data);
             });
 
     };
@@ -139,6 +135,12 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
         $scope.tagger.meta.last_token.type = index;
         $scope.results = null;
         $scope.model.inputPhrase = "";
+        if ($scope.tagger.meta.last_token.type != "Rel") {
+            xhrFactory.searchService({"label":index})
+                .then(function(data) {
+                    $scope.results = data;
+                })
+        }
     }
 
     return $scope;

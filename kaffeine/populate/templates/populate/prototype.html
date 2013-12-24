@@ -18,7 +18,9 @@
         <br>
         <div>
             <ul>
-                <li ng-repeat="result in results" ng-click="confirmTag(result.name, result.index)">{{ result.name }} ({{ result.index|capitalize }}) {{ count }}</li>
+
+                <li ng-repeat="(name, value) in results" ng-click="confirmTag(name, value.index, value.end_nodes)">{{ name }} ({{ value.index|capitalize }})</li>
+
             </ul>
             <span ng-model="results">{{ results }}</span>
         </div>

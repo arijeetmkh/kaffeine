@@ -43,12 +43,11 @@ app.factory("xhrFactory", function($q, $http, $filter) {
     return {
         searchService: function(args) {
             var url = null;
-            //if (args.label) {
             if (args.label) {
                 url = "http://0.0.0.0:7475/db/data/cypher";
                 data = {
-//                    "query":"MATCH (r:" + $filter('capitalize')(args.label) + ")-[t]->() RETURN type(t)"
-                    "query":"MATCH (r:" + $filter('capitalize')(args.label) + ")-[t]->() RETURN collect(type(t))"
+//                    "query":"MATCH (r:" + $filter('capitalize')(args.label) + ")-[t]->() RETURN collect(type(t))"
+                    "query":"MATCH (:" + $filter('capitalize')(args.label) + ")-[t]->() RETURN labels(startnode(t)), type(t), labels(endnode(t))"
                 }
             } else {
                 url = "http://0.0.0.0:9200/" + (args.index ? args.index:"_all") + "/static/_search";
@@ -69,17 +68,41 @@ app.factory("xhrFactory", function($q, $http, $filter) {
                     if (result.data.hasOwnProperty('hits')) {
 
                         for(var i=0; i<result.data.hits.hits.length; i++) {
-                            data[i] = { "name":result.data.hits.hits[i]._source.name, "index":result.data.hits.hits[i]._index}
+
+                            if (data.hasOwnProperty(result.data.hits.hits[i]._source.name)) {
+                                data[result.data.hits.hits[i]._source.name]['index'] = result.data.hits.hits[i]._index;
+                            } else {
+                                data[result.data.hits.hits[i]._source.name] = {
+                                    "index":result.data.hits.hits[i]._index
+                                }
+                            }
+//                            data[i] = {
+//                                "name":result.data.hits.hits[i]._source.name,
+//                                "index":result.data.hits.hits[i]._index
+//                            }
                         }
                     } else {
-                        for (var i=0; i<result.data.data[0][0].length;i++) {
-                            data[i] = {"name":result.data.data[0][0][i], "index":"Rel"}
 
+                        for (var i=0; i<result.data.data.length;i++) {
+
+                            if (data.hasOwnProperty(result.data.data[i][1])) {
+                                data[result.data.data[i][1]]['end_nodes'] = (data[result.data.data[i][1]]['end_nodes'] || []).concat([result.data.data[i][2][0]]);
+                                data[result.data.data[i][1]]['index'] = "Rel";
+                            } else {
+                                data[result.data.data[i][1]] = {
+                                    'end_nodes':[result.data.data[i][2][0]],
+                                    'index':"Rel"
+                                }
+                            }
+//                            data[i] = {
+//                                "name":result.data.data[i][1],
+//                                "index":"Rel",
+//                                "endnode":result.data.data[i][2][0]
+//
+//                            }
                         }
                     }
-
                     return data;
-//                    return result.data;
 
                 })
         }
@@ -93,9 +116,8 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
         'meta':{
             "q":"", //Contains raw query entered in full
             "last_token":{
-                "token":null, "type":null
+                "token":null, "type":null, "next_node":null
             }
-
         },
         'Restaurant':null,
         'Subzone':null,
@@ -109,42 +131,45 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
             return;
         }
 
+        //Enter this point only if not rel type
+
         args = {
             "inputPhrase":$filter('lowercase')(inputPhrase),
-            "index":null,
-            "label":null,
+            "index":($scope.tagger.meta.last_token.next_node ? $scope.tagger.meta.last_token.next_node : null), //Which elastic index to query
+            "label":null, //Confirms ajax request only to Elastic
             "meta":$scope.tagger.meta
-        }
-
+        };
 
         xhrFactory.searchService(args)
-//        xhrFactory.searchService($filter('lowercase')(inputPhrase), null)
             .then(function(data) {
                 $scope.results = data;
             });
 
     };
 
-    $scope.confirmTag = function(name, index) {
+    $scope.confirmTag = function(name, index, endnode) {
 
         index = $filter('capitalize')(index);
         $scope.tagger[index] = name;
-//        $scope.model.inputPhrase += name;
         $scope.tagger.meta.q += name + " ";
         $scope.tagger.meta.last_token.token = name;
         $scope.tagger.meta.last_token.type = index;
         $scope.results = null;
         $scope.model.inputPhrase = "";
-        if ($scope.tagger.meta.last_token.type != "Rel") {
+
+        if (index != "Rel") {
             xhrFactory.searchService({"label":index})
                 .then(function(data) {
                     $scope.results = data;
                 })
+        } else {
+            $scope.tagger.meta.last_token.next_node = endnode.join(",").toLowerCase();
+            console.log($scope.tagger.meta.last_token.next_node);
         }
-    }
+    };
 
     return $scope;
-})
+});
 
 
 app.filter("capitalize", function () {
@@ -152,7 +177,7 @@ app.filter("capitalize", function () {
         return input.substring(0,1).toUpperCase() + input.substring(1);
     }
 
-})
+});
 
 //
 //function searchCtrl($scope) {

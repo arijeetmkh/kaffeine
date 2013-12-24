@@ -71,6 +71,16 @@ def generate_geoff():
             }
         )
 
+    for i,feature in enumerate(feature_list):
+        es.index(
+            index="feature",
+            doc_type="static",
+            id=i,
+            body={
+                "name":feature
+            }
+        )
+
     print pm.RestaurantStatic.objects.insert(restaurant_batch_insert)
     print response.status_code
     print response.text

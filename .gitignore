@@ -7,3 +7,4 @@ env-project-kaffeine/
 .shell_history
 *.pyc
 *.geoff
+*.txt

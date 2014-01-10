@@ -106,6 +106,7 @@ app.factory("xhrFactory", function($q, $http, $filter) {
 
                 })
         }
+
     };
 })
 
@@ -119,15 +120,16 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
                 "token":null, "type":null, "next_node":null
             }
         },
-        'Restaurant':null,
-        'Subzone':null,
-        'Cuisine':null,
-        'Feature':null
+        'Restaurant':[],
+        'Subzone':[],
+        'Cuisine':[],
+        'Feature':[],
+        'Dish':[]
     };
 
     $scope.sendRequest = function(inputPhrase) {
 
-        if (inputPhrase.length <=1 || ($scope.tagger.meta.last_token.type && $scope.tagger.meta.last_token.type != "Rel")) {
+        if (!inputPhrase || inputPhrase.length <=1 ||  ($scope.tagger.meta.last_token.type && $scope.tagger.meta.last_token.type != "Rel")) {
             return;
         }
 
@@ -150,7 +152,9 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
     $scope.confirmTag = function(name, index, endnode) {
 
         index = $filter('capitalize')(index);
-        $scope.tagger[index] = name;
+        console.log($scope.tagger.index);
+        index != 'Rel' ? $scope.tagger[index].push(name):$scope.tagger[index] = name;
+        console.log($scope.tagger[index]);
         $scope.tagger.meta.q += name + " ";
         $scope.tagger.meta.last_token.token = name;
         $scope.tagger.meta.last_token.type = index;
@@ -164,7 +168,6 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
                 })
         } else {
             $scope.tagger.meta.last_token.next_node = endnode.join(",").toLowerCase();
-            console.log($scope.tagger.meta.last_token.next_node);
         }
     };
 

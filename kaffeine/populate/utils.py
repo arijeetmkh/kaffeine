@@ -84,3 +84,7 @@ def generate_geoff():
     print pm.RestaurantStatic.objects.insert(restaurant_batch_insert)
     print response.status_code
     print response.text
+
+
+def query_builder():
+    pass

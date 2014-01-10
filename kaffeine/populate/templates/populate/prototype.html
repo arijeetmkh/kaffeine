@@ -1,11 +1,14 @@
 <!doctype html>
+{% load staticfiles %}
 <html ng-app="SearchApp">
   <head>
-    <script type="text/javascript" src="angular.min.js"></script>
-    <script type="text/javascript" src="search.js"></script>
+
+    <script type="text/javascript" src="{% static "populate/angular.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "populate/search.js" %}"></script>
 
   </head>
   <body>
+
     <div ng-controller="searchCtrl">
         <panel callfunc="makeCall(message, number, network)" number="9911" network="network" ></panel>
         <panel callfunc="makeCall(message, number, network)" number="9868" network="network"></panel>
@@ -13,18 +16,30 @@
 
     </div>
 
-    <div ng-controller="autoSuggest">
-        {{ tagger.meta.q }} <input type="text" ng-model="model.inputPhrase" ng-change="sendRequest(model.inputPhrase)">
+        <form ng-controller="autoSuggest" name="searchForm" method="post" action="/results/">
+            {% csrf_token %}
+            {% verbatim %}
+            {{ tagger.meta.q }} <input type="text" name="searchInput" ng-model="model.inputPhrase" ng-change="sendRequest(model.inputPhrase)" required>
+
+            <input type="hidden" name="meta" value="{{ tagger }}" />
+
+            <span ng-show="searchForm.searchInput.$error.required">Required!</span><br>
+
+                <tt>searchForm.searchInput.$valid = {{searchForm.searchInput.$valid}}</tt><br>
+                <tt>searchForm.searchInput.$error = {{searchForm.searchInput.$error}}</tt>
+
         <br>
-        <div>
-            <ul>
+            <div>
+                <ul>
 
-                <li ng-repeat="(name, value) in results" ng-click="confirmTag(name, value.index, value.end_nodes)">{{ name }} ({{ value.index|capitalize }})</li>
+                    <li ng-repeat="(name, value) in results" ng-click="confirmTag(name, value.index, value.end_nodes)">{{ name }} ({{ value.index|capitalize }})</li>
 
-            </ul>
-            <span ng-model="results">{{ results }}</span>
-        </div>
-    </div>
+                </ul>
+                <span ng-model="results">{{ results }}</span>
+            </div>
+             {% endverbatim %}
+        </form>
+
 
   </body>
 </html>

@@ -21,7 +21,7 @@
             {% verbatim %}
             {{ tagger.meta.q }} <input type="text" name="searchInput" ng-model="model.inputPhrase" ng-change="sendRequest(model.inputPhrase)" required>
 
-            <input type="hidden" name="meta" value="{{ tagger }}" />
+            <input type="hidden" name="searchInput" value="{{ tagger }}" />
 
             <span ng-show="searchForm.searchInput.$error.required">Required!</span><br>
 

@@ -152,9 +152,7 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
     $scope.confirmTag = function(name, index, endnode) {
 
         index = $filter('capitalize')(index);
-        console.log($scope.tagger.index);
-        index != 'Rel' ? $scope.tagger[index].push(name):$scope.tagger[index] = name;
-        console.log($scope.tagger[index]);
+        index != 'Rel' ? $scope.tagger[index].push(name):$scope.tagger.meta.last_token[index] = name;
         $scope.tagger.meta.q += name + " ";
         $scope.tagger.meta.last_token.token = name;
         $scope.tagger.meta.last_token.type = index;

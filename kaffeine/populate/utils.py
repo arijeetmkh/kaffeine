@@ -1,6 +1,9 @@
 from . import models as pm
+
 import requests, elasticsearch
+
 from uuid import uuid4
+import ast, pdb
 
 feature_list = [
         "Dine-In Available",
@@ -86,5 +89,78 @@ def generate_geoff():
     print response.text
 
 
-def query_builder():
+class PreProcessing(object):
+
+    def __init__(self, tagger):
+        """
+        Accept incoming POST as tagger and evaluate it into dict
+        Call segregator
+        :param tagger: Incoming POST (type String)
+        """
+        print tagger
+        tagger = ast.literal_eval(tagger)
+        self.errors = {}
+
+        self.segregator(tagger)
+
+
+    def segregator(self, tagger):
+        """
+        Use tagger dict to separate out meta contents and tokens
+        :param tagger: Dict containing tokens only
+        """
+        self.meta = tagger.pop('meta')
+        self.tokens = tagger
+
+
+    def getter(self, get):
+        """
+        This method allows a string input or an iterable input
+        and returns their values by checking member values
+        """
+        if hasattr(get, '__iter__'):
+            pass
+        else:
+            pass
+
+        return None
+
+
+class Router(PreProcessing):
+
+    graph_routes = {
+        ("Dish", "Restaurant"):["Subzone", "Cuisine", "Restaurant", "Feature"],
+        ("Dish", "Feature"):["Subzone", "Cuisine", "Restaurant"],
+        ("Dish", "Subzone"):["Restaurant", "Cuisine", "Feature"],
+        ("Dish", "Cuisine"):["Subzone", "Restaurant", "Feature"],
+        ("Dish", "Cuisine", "Restaurant"):["Subzone", "Feature", "Restaurant"],
+        ("Dish", "Cuisine", "Feature"): ["Subzone", "Restaurant"],
+        ("Dish", "Cuisine", "Subzone"):["Restaurant", "Feature"],
+        ("Dish", "Subzone", "Restaurant"):["Cuisine", "Restaurant", "Feature"],
+        ("Dish", "Subzone", "Feature"):["Restaurant", "Cuisine"],
+        ("Dish", "Feature", "Restaurant"):["Subzone", "Cuisine", "Restaurant"]
+    }
+
+    def __init__(self, tagger):
+
+        super(Router, self).__init__(tagger)
+
+
+    def route_seletor(self):
+        """
+        Based on received tokens, perform intersection with all possible tokens
+        and use graph routes to select route
+        """
+
+        def select_valid_keys(key):
+            if self.tokens.get(key, None):
+                return key
+
+
+        intersection = set([x for x in self.tokens if not self.tokens[x]]) & set(self.tokens.keys())
+
+        self.route = self.graph_routes[tuple(intersection)]
+
+
+class QueryAssembler(Router):
     pass

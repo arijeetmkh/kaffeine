@@ -22,6 +22,17 @@ feature_list = [
 
 def generate_geoff():
 
+    def gen_kwargs(iterable, record, key_format=None, value_format=None, exclude=[]):
+
+        for i,element in enumerate(iterable):
+            if element in exclude:
+                iterable.pop(i)
+
+        package = {}
+        for element in iterable:
+            package.update({element if key_format is None else value_format.format(dot=".", _=element):eval(record.element, {}, {'record':record}) if value_format is None else eval(value_format.format(dot=".", _=element), {}, {'record':record})})
+        return package
+
     g = open('populate.geoff', 'w')
     restaurant_batch_insert = []
     subzone_batch_insert = []
@@ -34,7 +45,8 @@ def generate_geoff():
         #Connect Restaurant with Subzone
         g.write('("{restaurant_name}")-[:NEAR]->("{subzone_name}")\n'.format(restaurant_name=record.name + "__" + _id, subzone_name=record.subzone))
 
-        restaurant_batch_insert.append(pm.RestaurantStatic(id=_id, name=record.name, timings=record.timings, phone=record.phone, cost=record.cost, address=record.address))
+        # restaurant_batch_insert.append(pm.RestaurantStatic(id=_id, name=record.name, timings=record.timings, phone=record.phone, cost=record.cost, address=record.address, subzone=record.subzone))
+        restaurant_batch_insert.append(pm.RestaurantStatic(**gen_kwargs(iterable=pm.Items._fields.keys(), value_format="record{dot}{_}", exclude=['url'], record=record)))
         subzone_batch_insert.append(record.subzone)
 
         #Create cuisine node if required
@@ -52,7 +64,6 @@ def generate_geoff():
     payload = open('populate.geoff', 'r')
     response = requests.post('http://127.0.0.1:7474/load2neo/load/geoff', data=payload)
     payload.close()
-
     es = elasticsearch.Elasticsearch()
     for i,subzone in enumerate(list(set(subzone_batch_insert)),1):
         es.index(

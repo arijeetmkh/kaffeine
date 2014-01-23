@@ -1,24 +1,10 @@
 from . import models as pm
-
-import requests, elasticsearch
+from . import feature_list
 
 from uuid import uuid4
+
 import ast, pdb
-
-feature_list = [
-        "Dine-In Available",
-        "Home Delivery",
-        "Serves Non Veg",
-        "Bar Available",
-        "Seating Available",
-        "Air Conditioned",
-        "Outdoor Seating",
-        "Wifi Internet Available",
-        "Smoking Area",
-        "Sheesha",
-        "Live Music"
-    ]
-
+import requests, elasticsearch
 
 def generate_geoff():
 
@@ -29,13 +15,17 @@ def generate_geoff():
                 iterable.pop(i)
 
         package = {}
+
         for element in iterable:
             package.update({element if key_format is None else value_format.format(dot=".", _=element):eval(record.element, {}, {'record':record}) if value_format is None else eval(value_format.format(dot=".", _=element), {}, {'record':record})})
+
+        package.update({'features':list(set(feature_list).intersection(set(record.highlights + record.tags)))})
         return package
 
     g = open('populate.geoff', 'w')
     restaurant_batch_insert = []
     subzone_batch_insert = []
+
     for record in pm.Items.objects.all():
         _id = uuid4().hex
         #Create restaurant node
@@ -46,7 +36,7 @@ def generate_geoff():
         g.write('("{restaurant_name}")-[:NEAR]->("{subzone_name}")\n'.format(restaurant_name=record.name + "__" + _id, subzone_name=record.subzone))
 
         # restaurant_batch_insert.append(pm.RestaurantStatic(id=_id, name=record.name, timings=record.timings, phone=record.phone, cost=record.cost, address=record.address, subzone=record.subzone))
-        restaurant_batch_insert.append(pm.RestaurantStatic(**gen_kwargs(iterable=pm.Items._fields.keys(), value_format="record{dot}{_}", exclude=['url'], record=record)))
+        restaurant_batch_insert.append(pm.RestaurantStatic(**gen_kwargs(iterable=pm.Items._fields.keys(), value_format="record{dot}{_}", exclude=['url', 'highlights', 'highlights_not', 'tags'], record=record)))
         subzone_batch_insert.append(record.subzone)
 
         #Create cuisine node if required
@@ -95,7 +85,7 @@ def generate_geoff():
             }
         )
 
-    print pm.RestaurantStatic.objects.insert(restaurant_batch_insert)
+    pm.RestaurantStatic.objects.insert(restaurant_batch_insert)
     print response.status_code
     print response.text
 

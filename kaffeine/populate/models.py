@@ -1,34 +1,36 @@
 import mongoengine as me
+from . import feature_list
+import pdb
 
-## Data warehouse mongo engine model ##
-class Items(me.Document):
 
+class Fields(object):
     name = me.StringField()
     latlon =  me.ListField()
     rating = me.StringField()
     subzone = me.StringField()
-    tags = me.ListField()
     timings = me.StringField()
     phone = me.StringField()
-    highlights = me.ListField()
-    highlights_not = me.ListField()
     url = me.StringField()
     cuisines = me.ListField()
     address = me.StringField()
     cost = me.StringField()
 
 
+## Data warehouse mongo engine model ##
+class Items(Fields, me.Document):
+
+    highlights = me.ListField()
+    highlights_not = me.ListField()
+    tags = me.ListField()
+
     meta = {'collection':'items'}
 
 
-class RestaurantStatic(me.Document):
+class RestaurantStatic(me.Document, Fields):
 
     id = me.StringField(primary_key=True)
-    name = me.StringField()
-    timings = me.StringField()
-    phone = me.StringField()
-    cost = me.StringField()
-    address = me.StringField()
+
+    features = me.ListField(default=[])
 
     meta = {
         'collection':'RestaurantStatic',

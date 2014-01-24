@@ -2,6 +2,7 @@ from . import models as pm
 from . import feature_list
 
 from uuid import uuid4
+from py2neo import neo4j
 
 import ast, pdb
 import requests, elasticsearch
@@ -9,7 +10,6 @@ import requests, elasticsearch
 def generate_geoff():
 
     def gen_kwargs(iterable, record, key_format=None, value_format=None, exclude=[]):
-
         for i,element in enumerate(iterable):
             if element in exclude:
                 iterable.pop(i)
@@ -20,6 +20,8 @@ def generate_geoff():
             package.update({element if key_format is None else value_format.format(dot=".", _=element):eval(record.element, {}, {'record':record}) if value_format is None else eval(value_format.format(dot=".", _=element), {}, {'record':record})})
 
         package.update({'features':list(set(feature_list).intersection(set(record.highlights + record.tags)))})
+        del package['id'] #ToDo Improve this!
+
         return package
 
     g = open('populate.geoff', 'w')
@@ -36,7 +38,7 @@ def generate_geoff():
         g.write('("{restaurant_name}")-[:NEAR]->("{subzone_name}")\n'.format(restaurant_name=record.name + "__" + _id, subzone_name=record.subzone))
 
         # restaurant_batch_insert.append(pm.RestaurantStatic(id=_id, name=record.name, timings=record.timings, phone=record.phone, cost=record.cost, address=record.address, subzone=record.subzone))
-        restaurant_batch_insert.append(pm.RestaurantStatic(**gen_kwargs(iterable=pm.Items._fields.keys(), value_format="record{dot}{_}", exclude=['url', 'highlights', 'highlights_not', 'tags'], record=record)))
+        restaurant_batch_insert.append(pm.RestaurantStatic(id=_id, **gen_kwargs(iterable=pm.Items._fields.keys(), value_format="record{dot}{_}", exclude=['url', 'highlights', 'highlights_not', 'tags'], record=record)))
         subzone_batch_insert.append(record.subzone)
 
         #Create cuisine node if required
@@ -142,6 +144,8 @@ class Router(PreProcessing):
         ("Dish", "Feature", "Restaurant"):["Subzone", "Cuisine", "Restaurant"]
     }
 
+    route = None
+
     def __init__(self, tagger):
 
         super(Router, self).__init__(tagger)
@@ -154,6 +158,9 @@ class Router(PreProcessing):
         """
 
         def select_valid_keys(key):
+            """
+            Unused at the moment
+            """
             if self.tokens.get(key, None):
                 return key
 
@@ -163,5 +170,78 @@ class Router(PreProcessing):
         self.route = self.graph_routes[tuple(intersection)]
 
 
-class QueryAssembler(Router):
-    pass
+class QueryFactory(Router):
+
+    query = ""
+
+    def __init__(self, tagger):
+        super(QueryFactory, self).__init__(tagger)
+
+    def query_controller(self):
+        """
+        Handles the dispatch of all queries
+        """
+        #ToDo Add error checking
+        self.query_assembler()
+        self.query_post_processing()
+        # self.query_executer()
+
+
+    def query_assembler(self):
+        """
+        Use selected route to assemble the query
+        """
+        #ToDo Document this method properly
+
+        route_len = len(self.route)
+        with_ident = False
+
+        for i,node_type in enumerate(self.route,1):
+
+            if with_ident:
+                self.query += "MATCH ({with_ident})--".format(with_ident=with_ident)
+            else:
+                self.query += "MATCH "
+
+            ident = node_type[0].lower()
+            where_params = []
+
+            self.query += '({ident}:{node_type})'.format(ident=ident, node_type=node_type)
+
+            for token in self.tokens[node_type]:
+                where_params.append('({token})'.format(token=token))
+            else:
+                if node_type is "Restaurant" and not bool(self.tokens['Restaurant']):
+                    #Todo Implement logic when the case is Restaurant with no specified name
+                    self.query += ""
+
+                self.query += ' WHERE {ident}.name =~ "{where_params}"'.format(ident=ident, where_params="|".join(where_params))
+
+            if where_params and i != route_len:
+                self.query += " WITH {ident}".format(ident=ident)
+                with_ident = ident
+
+            self.query += " "
+
+        self.query = self.query.strip()
+
+
+    def query_post_processing(self):
+        """
+        Apply RETURN, SKIP and LIMIT operations to tail end of query
+        """
+        #ToDo Check to see if r._id will always return correctly (r.NUM needed?)
+        self.query += " RETURN collect(r._id) SKIP 0 LIMIT 20"
+
+
+    def query_executer(self):
+        """
+        This method is responsible for using py2neo to run the queries
+        """
+        self.graph_db_conn = neo4j.GraphDatabaseService(neo4j.DEFAULT_URI)
+        self.cyoher_query_object = neo4j.CypherQuery(self.graph_db_conn, self.query)
+        self.results = self.cyoher_query_object.execute()
+
+#ToDo Add getter and setters
+#ToDo Add overall superclass for control of flow
+#ToDo Add pagination class member options

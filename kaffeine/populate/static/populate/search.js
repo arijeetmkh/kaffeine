@@ -50,6 +50,19 @@ app.factory("xhrFactory", function($q, $http, $filter) {
                     "query":"MATCH (:" + $filter('capitalize')(args.label) + ")-[t]->() RETURN labels(startnode(t)), type(t), labels(endnode(t))"
                 }
             } else {
+//                TEMPORARY CODE
+//                REMOVE THIS WHEN dishes are implemented
+//                Currently dishes messes up the elastic query by trying to look for dishes index
+//                This block removes dishes from args.index
+                if (args.index) {
+                    var temp = args.index.split(',');
+                    var index = temp.indexOf("dish");
+                    if (index > -1) {
+                        temp.splice(index);
+                    }
+                    args.index = temp.join();
+                }
+
                 url = "http://0.0.0.0:9200/" + (args.index ? args.index:"_all") + "/static/_search";
                 data = {
                     "query": {
@@ -135,7 +148,7 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
 
         //Enter this point only if not rel type
 
-        args = {
+        var args = {
             "inputPhrase":$filter('lowercase')(inputPhrase),
             "index":($scope.tagger.meta.last_token.next_node ? $scope.tagger.meta.last_token.next_node : null), //Which elastic index to query
             "label":null, //Confirms ajax request only to Elastic

@@ -193,15 +193,28 @@ class QueryFactory(Router):
         """
         #ToDo Document this method properly
 
+        def loop_next(iterator, i=None):
+            if i:
+                try:
+                    to_return = iterator[i]
+                    return to_return
+                except IndexError:
+                    return None
+            else:
+                return None
+
         route_len = len(self.route)
         with_ident = False
 
         for i,node_type in enumerate(self.route,1):
 
+            if node_type is "Restaurant" and not bool(self.tokens['Restaurant']):
+                continue
+
+            self.query += "MATCH "
+
             if with_ident:
-                self.query += "MATCH ({with_ident})--".format(with_ident=with_ident)
-            else:
-                self.query += "MATCH "
+                self.query += "({with_ident})--".format(with_ident=with_ident)
 
             ident = node_type[0].lower()
             where_params = []
@@ -211,15 +224,15 @@ class QueryFactory(Router):
             for token in self.tokens[node_type]:
                 where_params.append('({token})'.format(token=token))
             else:
-                if node_type is "Restaurant" and not bool(self.tokens['Restaurant']):
-                    #Todo Implement logic when the case is Restaurant with no specified name
-                    self.query += ""
+                if loop_next(self.route, i) is "Restaurant" and not bool(self.tokens['Restaurant']):
+                    self.query += "--(r:Restaurant)"
 
-                self.query += ' WHERE {ident}.name =~ "{where_params}"'.format(ident=ident, where_params="|".join(where_params))
-
-            if where_params and i != route_len:
-                self.query += " WITH {ident}".format(ident=ident)
-                with_ident = ident
+                if where_params:
+                    self.query += ' WHERE {ident}.name =~ "{where_params}"'.format(ident=ident, where_params="|".join(where_params))
+                    if (i < route_len-1 and loop_next(self.route, i)) or (i < route_len and loop_next(self.route, i) is not "Restaurant"):
+                        #Set with_ident to 'r' if Restaurant has occured already
+                        with_ident = ident if "Restaurant" not in self.route[:i] else 'r'
+                        self.query += " WITH {with_ident}".format(with_ident=with_ident)
 
             self.query += " "
 
@@ -239,8 +252,8 @@ class QueryFactory(Router):
         This method is responsible for using py2neo to run the queries
         """
         self.graph_db_conn = neo4j.GraphDatabaseService(neo4j.DEFAULT_URI)
-        self.cyoher_query_object = neo4j.CypherQuery(self.graph_db_conn, self.query)
-        self.results = self.cyoher_query_object.execute()
+        self.cypher_query_object = neo4j.CypherQuery(self.graph_db_conn, self.query)
+        self.results = self.cypher_query_object.execute()
 
 #ToDo Add getter and setters
 #ToDo Add overall superclass for control of flow

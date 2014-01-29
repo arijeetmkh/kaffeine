@@ -6,5 +6,5 @@ from .views import SearchResults
 
 urlpatterns = patterns('',
                        url(r'home/', TemplateView.as_view(template_name="populate/prototype.html")),
-                       url(r'results', SearchResults.as_view())
+                       url(r'results', SearchResults.as_view()),
 )

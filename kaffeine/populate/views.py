@@ -15,5 +15,6 @@ class SearchResults(View):
 
         t = QueryFactory(request.POST['searchInput'])
         t.route_seletor()
+        t.query_controller()
         pdb.set_trace()
         return render_to_response(self.template_name, {}, context_instance=RequestContext(request))

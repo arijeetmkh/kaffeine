@@ -225,9 +225,17 @@ class QueryFactory(Router):
                 where_params.append('({token})'.format(token=token))
             else:
                 if loop_next(self.route, i) is "Restaurant" and not bool(self.tokens['Restaurant']):
+                    # If the next node is Restaurant, and its tokens are empty, do the following..
+                    # 1. Append --(r:Restaurant) to it
+                    # 2. Perform any where operations
+                    # 3. Set new with_ident to 'r' beacuse we have MATCHed forcefully to Restaurant
+                    # 4. Add the with_ident to the query string
                     self.query += "--(r:Restaurant)"
-
-                if where_params:
+                    self.query += ' WHERE {ident}.name =~ "{where_params}"'.format(ident=ident, where_params="|".join(where_params))
+                    with_ident = 'r'
+                    self.query += " WITH {with_ident}".format(with_ident=with_ident)
+                elif where_params:
+                    #This case is run only when the next item in node is not a Restaurant
                     self.query += ' WHERE {ident}.name =~ "{where_params}"'.format(ident=ident, where_params="|".join(where_params))
                     if (i < route_len-1 and loop_next(self.route, i)) or (i < route_len and loop_next(self.route, i) is not "Restaurant"):
                         #Set with_ident to 'r' if Restaurant has occured already
@@ -244,7 +252,7 @@ class QueryFactory(Router):
         Apply RETURN, SKIP and LIMIT operations to tail end of query
         """
         #ToDo Check to see if r._id will always return correctly (r.NUM needed?)
-        self.query += " RETURN collect(r._id) SKIP 0 LIMIT 20"
+        self.query += " RETURN r._id LIMIT 20;"
 
 
     def query_executer(self):
@@ -258,3 +266,4 @@ class QueryFactory(Router):
 #ToDo Add getter and setters
 #ToDo Add overall superclass for control of flow
 #ToDo Add pagination class member options
+#Use filter to weed out None keys

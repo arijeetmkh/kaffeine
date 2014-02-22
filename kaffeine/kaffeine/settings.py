@@ -127,6 +127,7 @@ INSTALLED_APPS = (
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'populate',
+    'djcelery',
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
@@ -135,6 +136,14 @@ INSTALLED_APPS = (
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 SESSION_ENGINE = 'django.contrib.sessions.backends.file'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.filebased.FileBasedCache',
+        'LOCATION': '/var/tmp/django_cache',
+    }
+}
+
 # A sample logging configuration. The only tangible logging
 # performed by this configuration is to send an email to
 # the site admins on every HTTP 500 error when DEBUG=False.
@@ -165,6 +174,10 @@ LOGGING = {
 }
 
 CELERY_IMPORTS = ("populate.tasks", )
+CELERY_RESULT_BACKEND='djcelery.backends.cache:CacheBackend'
 
 import mongoengine
 mongoengine.connect('scrapy', host='127.0.0.1', port=27017)
+
+from py2neo import neo4j
+graph_db_conn = neo4j.GraphDatabaseService()

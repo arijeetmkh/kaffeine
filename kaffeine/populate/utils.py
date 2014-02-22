@@ -1,5 +1,6 @@
 from . import models as pm
 from . import feature_list
+from kaffeine.settings import graph_db_conn
 
 from uuid import uuid4
 from py2neo import neo4j
@@ -100,7 +101,6 @@ class PreProcessing(object):
         Call segregator
         :param tagger: Incoming POST (type String)
         """
-        print tagger
         tagger = ast.literal_eval(tagger)
         self.errors = {}
 
@@ -175,6 +175,7 @@ class QueryFactory(Router):
     query = ""
 
     def __init__(self, tagger):
+        self.graph_db_conn = graph_db_conn
         super(QueryFactory, self).__init__(tagger)
 
     def query_controller(self):
@@ -184,7 +185,7 @@ class QueryFactory(Router):
         #ToDo Add error checking
         self.query_assembler()
         self.query_post_processing()
-        # self.query_executer()
+        self.query_executer()
 
 
     def query_assembler(self):
@@ -252,16 +253,23 @@ class QueryFactory(Router):
         Apply RETURN, SKIP and LIMIT operations to tail end of query
         """
         #ToDo Check to see if r._id will always return correctly (r.NUM needed?)
-        self.query += " RETURN r._id LIMIT 20;"
+        self.query += " RETURN collect(r._id) LIMIT 20;"
 
 
     def query_executer(self):
         """
         This method is responsible for using py2neo to run the queries
         """
-        self.graph_db_conn = neo4j.GraphDatabaseService(neo4j.DEFAULT_URI)
         self.cypher_query_object = neo4j.CypherQuery(self.graph_db_conn, self.query)
         self.results = self.cypher_query_object.execute()
+
+    def get_results_or_errors(self):
+        """
+        Returns self.results if results found, else give out errors, NotFound, DB Errors, etc
+        """
+        return self.results.data[0]._values[0]
+
+        # return self.results
 
 #ToDo Add getter and setters
 #ToDo Add overall superclass for control of flow

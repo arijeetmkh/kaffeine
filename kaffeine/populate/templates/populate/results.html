@@ -1,9 +1,22 @@
 <!DOCTYPE html>
-<html>
+{% load staticfiles %}
+<html ng-app="SearchResults">
 <head>
     <title>Search Results</title>
+    <script type="text/javascript" src="{% static "populate/angular.min.js" %}"></script>
+    <script type="text/javascript" src="{% static "populate/results.js" %}"></script>
+
+
 </head>
 <body>
+{{ id }}
+
+    <div ng-controller="resultCtrl" ng-init="init('{{ id }}')">
+        {% verbatim %}
+        {{ test }}
+        {% endverbatim %}
+    </div>
 
 </body>
+
 </html>

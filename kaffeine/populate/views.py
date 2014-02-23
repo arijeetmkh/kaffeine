@@ -20,6 +20,6 @@ class SearchResults(View):
         # data, errors = t.get_results_or_errors()
         # pdb.set_trace()
 
-        async_task = pt.dispatch.subtask((request.POST['searchInput'],), countdown=5).apply_async()
+        async_task = pt.dispatch.subtask((request.POST['searchInput'],)).apply_async()
 
         return render_to_response(self.template_name, {'id':async_task.id}, context_instance=RequestContext(request))

@@ -11,19 +11,24 @@ class FetchResults(View):
     result_fields = ['id', 'name', 'subzone']
     job_id = None
     async_task = None
-    response = {
-        'ready':False,
-        'status':"",
-        'message':None,
-        'data':{
-            'ids':None,
-            'data':[]
-        },
-        'count':0
-    }
+    response = None
+
+    def __init__(self, **kwargs):
+
+        self.response = {
+            'ready':False,
+            'status':"",
+            'message':None,
+            'data':{
+                'ids':None,
+                'data':[]
+            },
+            'count':0
+        }
+
+        super(FetchResults, self).__init__(**kwargs)
 
     def get(self, request, *args, **kwargs):
-
         self.job_id = request.GET['id']
         self.async_task = pt.dispatch.AsyncResult(self.job_id)
         if not self.check_ready():
@@ -46,7 +51,7 @@ class FetchResults(View):
 
         self.response['data']['ids'] = self.async_task.get()
         self.response['count'] = len(self.response['data']['ids'])
-        for restaurant in pm.RestaurantStatic.objects.filter(id__in=self.response['data']['ids']):
+        for restaurant in pm.RestaurantStatic.objects.filter(id__in=self.async_task.get()):
             append_dict = {}
             for field in self.result_fields:
                 append_dict[field] = restaurant[field]
@@ -54,4 +59,5 @@ class FetchResults(View):
 
 
     def response_return(self):
+        print self.response
         return HttpResponse(json.dumps(self.response), content_type="application/json")

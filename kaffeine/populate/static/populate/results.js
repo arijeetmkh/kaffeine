@@ -16,7 +16,6 @@ app.factory("xhrFactory", function($q, $http) {
 
 
 app.controller("resultCtrl", function($scope, $timeout, xhrFactory) {
-    $scope.test = "Results go here";
 
     $scope.init = function(id) {
         xhrFactory.ajax_results(id)
@@ -27,9 +26,14 @@ app.controller("resultCtrl", function($scope, $timeout, xhrFactory) {
                     $timeout(function(){
                         $scope.init(id)
                     },2000);
+                } else if(results.data.status == "SUCCESS") {
+                    //perform result parsing here
+                    $scope.data = results.data.data.data;
+
                 } else {
-                    //perform result parting here
-                    console.log("performing result parsing.. SUCESS");
+                    //remaining cases to check
+                    //fail cases
+                    //ToDo Check and deal with failed cases
                 }
                 //parse the result
                 //update scope var using returned data

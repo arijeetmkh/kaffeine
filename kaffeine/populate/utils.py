@@ -254,6 +254,7 @@ class QueryFactory(Router):
         """
         #ToDo Check to see if r._id will always return correctly (r.NUM needed?)
         self.query += " RETURN collect(r._id) LIMIT 20;"
+        print self.query
 
 
     def query_executer(self):

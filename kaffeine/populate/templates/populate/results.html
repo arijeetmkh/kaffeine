@@ -13,7 +13,13 @@
 
     <div ng-controller="resultCtrl" ng-init="init('{{ id }}')">
         {% verbatim %}
-        {{ test }}
+        <ul>
+            <li ng-repeat="result in data">
+                <strong>{{ result.name }}</strong>
+                <br>
+                {{ result.subzone }}
+            </li>
+        </ul>
         {% endverbatim %}
     </div>
 

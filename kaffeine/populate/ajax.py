@@ -18,7 +18,7 @@ class FetchResults(View):
         self.response = {
             'ready':False,
             'status':"",
-            'message':None,
+            'message':None,#not implemented
             'data':{
                 'ids':None,
                 'data':[]
@@ -59,5 +59,4 @@ class FetchResults(View):
 
 
     def response_return(self):
-        print self.response
         return HttpResponse(json.dumps(self.response), content_type="application/json")

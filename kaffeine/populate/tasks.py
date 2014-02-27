@@ -18,7 +18,7 @@ def test(self):
 @shared_task
 def dispatch(searchInput):
 
-    t = pu.QueryFactory(searchInput)
+    t = pu.QueryFactory(searchInput, logger)
     t.route_seletor()
     t.query_controller()
     logger.debug(t.query)

@@ -5,7 +5,7 @@ from kaffeine.settings import graph_db_conn
 from uuid import uuid4
 from py2neo import neo4j
 
-import ast, pdb
+import ast, pdb,json
 import requests, elasticsearch
 
 def generate_geoff():
@@ -101,7 +101,8 @@ class PreProcessing(object):
         Call segregator
         :param tagger: Incoming POST (type String)
         """
-        tagger = ast.literal_eval(tagger)
+        tagger = json.loads(tagger)
+        # tagger = ast.literal_eval(tagger)
         self.errors = {}
 
         self.segregator(tagger)
@@ -164,18 +165,23 @@ class Router(PreProcessing):
             if self.tokens.get(key, None):
                 return key
 
-
-        intersection = set([x for x in self.tokens if not self.tokens[x]]) & set(self.tokens.keys())
-
-        self.route = self.graph_routes[tuple(intersection)]
+        if sum(map(bool, self.tokens.values())) != 1:
+            intersection = set([x for x in self.tokens if not self.tokens[x]]) & set(self.tokens.keys())
+            self.route = self.graph_routes[tuple(intersection)]
+        else:
+            for key in self.tokens.keys():
+                if bool(self.tokens[key]):
+                    self.route = ["Restaurant"] if key == "Restaurant" else [key, "Restaurant"]
+                    break
 
 
 class QueryFactory(Router):
 
     query = ""
 
-    def __init__(self, tagger):
+    def __init__(self, tagger, logger):
         self.graph_db_conn = graph_db_conn
+        self.logger = logger
         super(QueryFactory, self).__init__(tagger)
 
     def query_controller(self):
@@ -208,6 +214,7 @@ class QueryFactory(Router):
         with_ident = False
 
         for i,node_type in enumerate(self.route,1):
+            # self.logger.debug(self.query)
 
             if node_type is "Restaurant" and not bool(self.tokens['Restaurant']):
                 continue
@@ -236,16 +243,30 @@ class QueryFactory(Router):
                     with_ident = 'r'
                     self.query += " WITH {with_ident}".format(with_ident=with_ident)
                 elif where_params:
-                    #This case is run only when the next item in node is not a Restaurant
+                    # Next item is either NOT a restaurant OR is a restaurant and has empty where params for restaurant
                     self.query += ' WHERE {ident}.name =~ "{where_params}"'.format(ident=ident, where_params="|".join(where_params))
-                    if (i < route_len-1 and loop_next(self.route, i)) or (i < route_len and loop_next(self.route, i) is not "Restaurant"):
-                        #Set with_ident to 'r' if Restaurant has occured already
+
+                    # Enter only IF:
+                        #   Current iteration is at most two less than total in route AND
+                        #   Next Loop iteration exists in route
+                        #   OR
+                        #   Current iteration is atmost one less than total in route AND
+                        #   Next Loop iteration is not Restaurant
+                    # Else:
+                        #
+                    # if (i < route_len-1 and loop_next(self.route, i)) or (i < route_len and loop_next(self.route, i) is not "Restaurant"):
+                    if loop_next(self.route, i):
+                        # Set with_ident to 'r' if Restaurant has occured already
                         with_ident = ident if "Restaurant" not in self.route[:i] else 'r'
                         self.query += " WITH {with_ident}".format(with_ident=with_ident)
+                    # else:
+                    #     with_ident = ident
+                    #     self.query += " WITH {with_ident}".format(with_ident=with_ident)
 
             self.query += " "
 
         self.query = self.query.strip()
+
 
 
     def query_post_processing(self):
@@ -254,7 +275,6 @@ class QueryFactory(Router):
         """
         #ToDo Check to see if r._id will always return correctly (r.NUM needed?)
         self.query += " RETURN collect(r._id) LIMIT 20;"
-        print self.query
 
 
     def query_executer(self):

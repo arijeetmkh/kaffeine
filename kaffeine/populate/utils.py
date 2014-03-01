@@ -1,6 +1,6 @@
 from . import models as pm
 from . import feature_list
-from kaffeine.settings import graph_db_conn
+# from kaffeine.settings import graph_db_conn
 
 from uuid import uuid4
 from py2neo import neo4j
@@ -180,7 +180,7 @@ class QueryFactory(Router):
     query = ""
 
     def __init__(self, tagger, logger):
-        self.graph_db_conn = graph_db_conn
+        self.graph_db_conn = neo4j.GraphDatabaseService()
         self.logger = logger
         super(QueryFactory, self).__init__(tagger)
 

@@ -45,7 +45,7 @@ app.factory("xhrFactory", function($q, $http, $filter) {
             var url = null;
             if (args.label) {
                 url = "http://0.0.0.0:7475/db/data/cypher";
-                data = {
+                var data = {
 //                    "query":"MATCH (r:" + $filter('capitalize')(args.label) + ")-[t]->() RETURN collect(type(t))"
                     "query":"MATCH (:" + $filter('capitalize')(args.label) + ")-[t]->() RETURN labels(startnode(t)), type(t), labels(endnode(t))"
                 }
@@ -76,7 +76,7 @@ app.factory("xhrFactory", function($q, $http, $filter) {
             return $http.post(url, data)
                 .then(function(result) {
 
-                    data = {}
+                    var data = {};
 
                     if (result.data.hasOwnProperty('hits')) {
 
@@ -107,6 +107,7 @@ app.factory("xhrFactory", function($q, $http, $filter) {
                                     'index':"Rel"
                                 }
                             }
+
 //                            data[i] = {
 //                                "name":result.data.data[i][1],
 //                                "index":"Rel",
@@ -121,7 +122,7 @@ app.factory("xhrFactory", function($q, $http, $filter) {
         }
 
     };
-})
+});
 
 
 app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
@@ -142,7 +143,7 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
 
     $scope.sendRequest = function(inputPhrase) {
 
-        if (!inputPhrase || inputPhrase.length <=1 ||  ($scope.tagger.meta.last_token.type && $scope.tagger.meta.last_token.type != "Rel")) {
+        if (!inputPhrase || inputPhrase.length <=1 || ($scope.tagger.meta.last_token.type && $scope.tagger.meta.last_token.type != "Rel")) {
             return;
         }
 
@@ -171,10 +172,11 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
         $scope.tagger.meta.last_token.type = index;
         $scope.results = null;
         $scope.model.inputPhrase = "";
-
         if (index != "Rel") {
-            xhrFactory.searchService({"label":index})
+            xhrFactory.searchService({"label":index})//Sending label only makes sure request is sent to NEO search graph
                 .then(function(data) {
+                    //Append AND option into data returned by NEO search graph
+                    data['AND'] = {'index':'Rel', 'end_nodes':[$scope.tagger.meta.last_token.type]};
                     $scope.results = data;
                 })
         } else {

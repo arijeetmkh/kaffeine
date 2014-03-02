@@ -42,13 +42,20 @@ app.factory("xhrFactory", function($q, $http, $filter) {
 
     return {
         searchService: function(args) {
+            var config = {};
             var url = null;
             if (args.label) {
-                url = "http://0.0.0.0:7475/db/data/cypher";
+//                url = "http://0.0.0.0:7475/db/data/cypher";
+                url = "http://test.sb01.stations.graphenedb.com:24789/db/data/cypher";
                 var data = {
 //                    "query":"MATCH (r:" + $filter('capitalize')(args.label) + ")-[t]->() RETURN collect(type(t))"
                     "query":"MATCH (:" + $filter('capitalize')(args.label) + ")-[t]->() RETURN labels(startnode(t)), type(t), labels(endnode(t))"
-                }
+                };
+                config = {
+                    'headers':{
+                        'Authorization':'Basic dGVzdDpCOUdKdUNTNVN3Qm9IQTlLUWtxbQ=='
+                    }
+                };
             } else {
 //                TEMPORARY CODE
 //                REMOVE THIS WHEN dishes are implemented
@@ -73,7 +80,7 @@ app.factory("xhrFactory", function($q, $http, $filter) {
                     "size":"20"
                 }
             }
-            return $http.post(url, data)
+            return $http.post(url, data, config)
                 .then(function(result) {
 
                     var data = {};

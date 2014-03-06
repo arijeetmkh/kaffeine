@@ -82,7 +82,7 @@ app.factory("xhrFactory", function($q, $http, $filter) {
             }
             return $http.post(url, data, config)
                 .then(function(result) {
-
+                    console.log(result);
                     var data = {};
 
                     if (result.data.hasOwnProperty('hits')) {
@@ -179,6 +179,7 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
         $scope.tagger.meta.last_token.type = index;
         $scope.results = null;
         $scope.model.inputPhrase = "";
+        // To fetch relationships we must make sure confirmed tag is NOT rel
         if (index != "Rel") {
             xhrFactory.searchService({"label":index})//Sending label only makes sure request is sent to NEO search graph
                 .then(function(data) {

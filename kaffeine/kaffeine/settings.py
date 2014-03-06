@@ -178,6 +178,3 @@ CELERY_RESULT_BACKEND='djcelery.backends.cache:CacheBackend'
 
 import mongoengine
 mongoengine.connect('scrapy', host='127.0.0.1', port=27017)
-
-from py2neo import neo4j
-graph_db_conn = neo4j.GraphDatabaseService()

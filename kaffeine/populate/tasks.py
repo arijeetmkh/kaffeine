@@ -21,5 +21,5 @@ def dispatch(searchInput):
     t = pu.QueryFactory(searchInput, logger)
     t.route_seletor()
     t.query_controller()
-    logger.debug(t.query)
+    logger.info(t.query)
     return  t.get_results_or_errors()

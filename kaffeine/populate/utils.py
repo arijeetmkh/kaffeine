@@ -180,7 +180,7 @@ class QueryFactory(Router):
     query = ""
 
     def __init__(self, tagger, logger):
-        self.graph_db_conn = neo4j.GraphDatabaseService()
+        self.graph_db_conn = neo4j.GraphDatabaseService('http://127.0.0.1:7474')
         self.logger = logger
         super(QueryFactory, self).__init__(tagger)
 

@@ -19,9 +19,9 @@
         <form ng-controller="autoSuggest" name="searchForm" method="post" action="/results/">
             {% csrf_token %}
             {% verbatim %}
-            {{ tagger.meta.q }} <input type="text" name="searchInput" ng-model="model.inputPhrase" ng-change="sendRequest(model.inputPhrase)" required />
+            {{ tagger.meta.q }} <input type="text" name="searchInput" ng-model="model.inputPhrase" ng-change="sendRequest(model.inputPhrase)" required>
 
-            <input type="hidden" name="searchInput" value="{{ tagger }}" />
+            <input type="hidden" name="searchInput" value="{{ tagger }}">
 
             <span ng-show="searchForm.searchInput.$error.required">Required!</span><br>
 
@@ -32,7 +32,9 @@
             <div>
                 <ul>
 
-                    <li ng-repeat="(name, value) in results" ng-click="confirmTag(name, value.index, value.end_nodes)">{{ name }} ({{ value.index|capitalize }})</li>
+                    <li ng-repeat="result in results | filter:{name:model.inputPhrase}" ng-click="confirmTag(result.name, result.index, result.end_nodes)">
+                        {{ result.name }} ({{ result.index|capitalize }})
+                    </li>
 
                 </ul>
                 <span ng-model="results">{{ results }}</span>

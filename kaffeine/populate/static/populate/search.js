@@ -82,49 +82,30 @@ app.factory("xhrFactory", function($q, $http, $filter) {
             }
             return $http.post(url, data, config)
                 .then(function(result) {
-                    console.log(result);
-                    var data = {};
+                    var data = [];
 
                     if (result.data.hasOwnProperty('hits')) {
 
                         for(var i=0; i<result.data.hits.hits.length; i++) {
 
-                            if (data.hasOwnProperty(result.data.hits.hits[i]._source.name)) {
-                                data[result.data.hits.hits[i]._source.name]['index'] = result.data.hits.hits[i]._index;
-                            } else {
-                                data[result.data.hits.hits[i]._source.name] = {
-                                    "index":result.data.hits.hits[i]._index
-                                }
-                            }
-//                            data[i] = {
-//                                "name":result.data.hits.hits[i]._source.name,
-//                                "index":result.data.hits.hits[i]._index
-//                            }
+                            data.push({
+                                'name':result.data.hits.hits[i]._source.name,
+                                'index':result.data.hits.hits[i]._index
+                            });
                         }
                     } else {
-
+                        data.push(null);
                         for (var i=0; i<result.data.data.length;i++) {
+                            // Data starts from i+1 since AND option is appended later at index 0
+                            data.push({
+                                'name':result.data.data[i][1],
+                                'index':'Rel',
+                               'end_nodes':[].concat(result.data.data[i][2][0])
+                            });
 
-                            if (data.hasOwnProperty(result.data.data[i][1])) {
-                                data[result.data.data[i][1]]['end_nodes'] = (data[result.data.data[i][1]]['end_nodes'] || []).concat([result.data.data[i][2][0]]);
-                                data[result.data.data[i][1]]['index'] = "Rel";
-                            } else {
-                                data[result.data.data[i][1]] = {
-                                    'end_nodes':[result.data.data[i][2][0]],
-                                    'index':"Rel"
-                                }
-                            }
-
-//                            data[i] = {
-//                                "name":result.data.data[i][1],
-//                                "index":"Rel",
-//                                "endnode":result.data.data[i][2][0]
-//
-//                            }
                         }
                     }
                     return data;
-
                 })
         }
 
@@ -184,14 +165,15 @@ app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
             xhrFactory.searchService({"label":index})//Sending label only makes sure request is sent to NEO search graph
                 .then(function(data) {
                     //Append AND option into data returned by NEO search graph
-                    data['AND'] = {'index':'Rel', 'end_nodes':[$scope.tagger.meta.last_token.type]};
+                    data[0] = {'name':'AND', 'index':'Rel', 'end_nodes':[$scope.tagger.meta.last_token.type]};
+//                    data['AND'] = {'index':'Rel', 'end_nodes':[$scope.tagger.meta.last_token.type]};
                     $scope.results = data;
+                    console.log(data);
                 })
         } else {
             $scope.tagger.meta.last_token.next_node = endnode.join(",").toLowerCase();
         }
     };
-
     return $scope;
 });
 

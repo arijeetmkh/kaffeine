@@ -1,3 +1,6 @@
+from django.db import models
+from django.contrib.auth.models import User
+from social.apps.django_app.default.models import UserSocialAuth
 import mongoengine as me
 from datetime import datetime, timedelta
 
@@ -45,3 +48,17 @@ class RestaurantStatic(me.Document, Fields):
         self.last_edited = datetime.utcnow() + timedelta(hours=5, minutes=30)
 
         super(RestaurantStatic, self).save(*args, **kwargs)
+
+
+#POSTGRES model
+class FriendData(models.Model):
+    """
+    This model contains information detailing friends. Who is whos friend
+    """
+
+    id = models.AutoField(primary_key=True)
+    uid = models.ForeignKey(User, related_name='frienddata_uid')
+    friend_id = models.ForeignKey(User, related_name='frienddata_friend_id')
+
+    class Meta:
+        unique_together = (("uid", "friend_id"),)

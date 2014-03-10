@@ -292,7 +292,43 @@ class QueryFactory(Router):
 
         # return self.results
 
+
+
+def facebook_graph_api_query(endpoint='/me', id=None, token=None, **kwargs):
+    """
+    Query the facebook endpoint and return json data
+
+    Return format = (json, success?)
+    """
+    if not token:
+        return {}, False
+    FB_BASE_URI = "https://graph.facebook.com"
+    id = id or '/me'
+    params = {
+        'access_token':token,
+    }
+    params.update(kwargs)
+
+    import requests
+    response = requests.get(FB_BASE_URI + endpoint, params=params)
+    return response.json(), True
+
+def create_friends(user, existing_friends):
+    """
+    Create SQL entries to show friendship
+    Create relationships in Graph
+    """
+    bulk_insert = []
+    for friend in existing_friends:
+        bulk_insert.append(pm.FriendData(uid=user, friend_id=friend.user))
+        bulk_insert.append(pm.FriendData(uid=friend.user, friend_id=user))
+
+    pm.FriendData.objects.bulk_create(
+        bulk_insert
+    )
+
+
+
 #ToDo Add getter and setters
 #ToDo Add overall superclass for control of flow
 #ToDo Add pagination class member options
-#Use filter to weed out None keys

@@ -8,3 +8,4 @@ env-project-kaffeine/
 *.pyc
 *.geoff
 *.txt
+*.db

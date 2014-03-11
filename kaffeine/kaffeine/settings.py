@@ -12,10 +12,21 @@ ADMINS = (
 
 MANAGERS = ADMINS
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql_psycopg2', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+#         'NAME': 'user',                      # Or path to database file if using sqlite3.
+#         # The following settings are not used with sqlite3:
+#         'USER': 'hungerbox',
+#         'PASSWORD': 'hungerbox',
+#         'HOST': '127.0.0.1',                      # Empty for localhost through domain sockets or '127.0.0.1' for localhost through TCP.
+#         'PORT': '',                      # Set to empty string for default.
+#     }
+# }
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
-        'NAME': '',                      # Or path to database file if using sqlite3.
+        'ENGINE': 'django.db.backends.sqlite3', # Add 'postgresql_psycopg2', 'mysql', 'sqlite3' or 'oracle'.
+        'NAME': BASE + '/user.db',                      # Or path to database file if using sqlite3.
         # The following settings are not used with sqlite3:
         'USER': '',
         'PASSWORD': '',
@@ -128,11 +139,14 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'populate',
     'djcelery',
+    'social.apps.django_app.default',
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:
     # 'django.contrib.admindocs',
 )
+
+TEMPLATE_CONTEXT_PROCESSORS = ()
 
 SESSION_SERIALIZER = 'django.contrib.sessions.serializers.JSONSerializer'
 SESSION_ENGINE = 'django.contrib.sessions.backends.file'
@@ -172,6 +186,28 @@ LOGGING = {
         },
     }
 }
+
+
+#############################
+# SOCIAL AUTH SETTINGS
+
+SOCIAL_AUTH_FACEBOOK_KEY = "803044479709179"
+SOCIAL_AUTH_FACEBOOK_SECRET = "78dd6a84c060877eee6d9e43d11b7419"
+SOCIAL_AUTH_FACEBOOK_SCOPE = ['email', 'user_friends']
+SOCIAL_AUTH_NEW_USER_REDIRECT_URL = "/welcome/"
+# SOCIAL_AUTH_USER_MODEL = 'django.contrib.auth.models.User'
+AUTHENTICATION_BACKENDS = (
+    'social.backends.facebook.FacebookOAuth2',
+    'django.contrib.auth.backends.ModelBackend',
+)
+
+TEMPLATE_CONTEXT_PROCESSORS += (
+    'social.apps.django_app.context_processors.backends',
+    'social.apps.django_app.context_processors.login_redirect',
+)
+
+# SOCIAL AUTH END
+############################
 
 CELERY_IMPORTS = ("populate.tasks", )
 CELERY_RESULT_BACKEND='djcelery.backends.cache:CacheBackend'

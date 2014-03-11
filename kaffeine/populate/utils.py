@@ -1,6 +1,6 @@
 from . import models as pm
 from . import feature_list
-# from kaffeine.settings import graph_db_conn
+from social.apps.django_app.default.models import UserSocialAuth
 
 from uuid import uuid4
 from py2neo import neo4j
@@ -292,7 +292,63 @@ class QueryFactory(Router):
 
         # return self.results
 
+
+
+def facebook_graph_api_query(endpoint='/me', id=None, token=None, **kwargs):
+    """
+    Query the facebook endpoint and return json data
+
+    Return format = (json, success?)
+    """
+    if not token:
+        return {}, False
+    FB_BASE_URI = "https://graph.facebook.com"
+    id = id or '/me'
+    params = {
+        'access_token':token,
+    }
+    params.update(kwargs)
+
+    import requests
+    response = requests.get(FB_BASE_URI + endpoint, params=params)
+    return response.json(), True
+
+def create_friends(user, existing_friends):
+    """
+    Create SQL entries to show friendship
+    Create relationships in Graph
+    """
+    #ToDo Add error handling
+    bulk_insert = []
+    existing_friend_ids = []
+    for friend in existing_friends:
+        bulk_insert.append(pm.FriendData(uid=user, friend_id=friend.user))
+        bulk_insert.append(pm.FriendData(uid=friend.user, friend_id=user))
+        existing_friend_ids.append(friend.uid)
+
+    pm.FriendData.objects.bulk_create(
+        bulk_insert
+    )
+
+    #Create Graph Node object
+    graph_db = neo4j.GraphDatabaseService()
+
+    user_index = graph_db.get_or_create_index(neo4j.Node, "User")
+    user_node = user_index.get_or_create("uid", UserSocialAuth.objects.get(user=user).uid, {"uid":UserSocialAuth.objects.get(user=user).uid})
+    user_node.add_labels("User")
+
+    #Create friend relationships to existing friends
+    for friend_uid in existing_friend_ids:
+
+        friend_created = user_index.create_if_none("uid", friend_uid, {"uid":friend_uid})
+        if friend_created:
+            friend_created.add_labels("User")
+        else:
+            friend_created = user_index.get("uid", friend_uid)[0]
+
+        rel = graph_db.create((user_node, "FRIENDS", friend_created))
+
+
 #ToDo Add getter and setters
 #ToDo Add overall superclass for control of flow
 #ToDo Add pagination class member options
-#Use filter to weed out None keys

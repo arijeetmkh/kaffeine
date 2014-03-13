@@ -71,14 +71,32 @@ app.factory("xhrFactory", function($q, $http, $filter) {
                 }
 
                 url = "http://0.0.0.0:9200/" + (args.index ? args.index:"_all") + "/static/_search";
+
+
                 data = {
-                    "query": {
-                        "term": {
-                            "name":args.inputPhrase
+                    "query":{
+                        "bool":{
+                            "must":[
+                                {"fuzzy":{"static.name":{"value":args.inputPhrase}}}
+                            ],
+                            "must_not":[],
+                            "should":[]
                         }
                     },
-                    "size":"20"
-                }
+                    "from":0,
+                    "size":10,
+                    "sort":[],
+                    "facets":{}
+                };
+
+//                data = {
+//                    "query": {
+//                        "term": {
+//                            "name":args.inputPhrase
+//                        }
+//                    },
+//                    "size":"20"
+//                }
             }
             return $http.post(url, data, config)
                 .then(function(result) {

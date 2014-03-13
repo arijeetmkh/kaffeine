@@ -239,12 +239,12 @@ class QueryFactory(Router):
                     # 3. Set new with_ident to 'r' beacuse we have MATCHed forcefully to Restaurant
                     # 4. Add the with_ident to the query string
                     self.query += "--(r:Restaurant)"
-                    self.query += ' WHERE {ident}.name =~ "{where_params}"'.format(ident=ident, where_params="|".join(where_params))
+                    self.query += " WHERE {ident}.name =~ '{where_params}'".format(ident=ident, where_params="|".join(where_params))
                     with_ident = 'r'
                     self.query += " WITH {with_ident}".format(with_ident=with_ident)
                 elif where_params:
                     # Next item is either NOT a restaurant OR is a restaurant and has empty where params for restaurant
-                    self.query += ' WHERE {ident}.name =~ "{where_params}"'.format(ident=ident, where_params="|".join(where_params))
+                    self.query += " WHERE {ident}.name =~ '{where_params}'".format(ident=ident, where_params="|".join(where_params))
 
                     # Enter only IF:
                         #   Current iteration is at most two less than total in route AND
@@ -274,24 +274,44 @@ class QueryFactory(Router):
         Apply RETURN, SKIP and LIMIT operations to tail end of query
         """
         #ToDo Check to see if r._id will always return correctly (r.NUM needed?)
-        self.query += " RETURN collect(r._id) LIMIT 20;"
+        self.query += " RETURN r._id SKIP 0 LIMIT 20;"
 
 
     def query_executer(self):
         """
         This method is responsible for using py2neo to run the queries
         """
-        self.cypher_query_object = neo4j.CypherQuery(self.graph_db_conn, self.query)
-        self.results = self.cypher_query_object.execute()
+        RAW_CYPHER_QUERY = "http://127.0.0.1:7474/db/data/cypher"
+
+        headers = {
+            'content-type':'application/json',
+            'encoding':'utf-8'
+        }
+        payload = {
+            "query":self.query,
+            "params":{}
+        }
+        r = requests.post(RAW_CYPHER_QUERY, data=json.dumps(payload), headers=headers)
+        try:
+            self.results = r.json()
+            print self.results
+        except ValueError:
+            # Handle JSON could not be decoded
+            pass
+        except Exception:
+            # Handle any other exception
+            pass
+
+        # self.cypher_query_object = neo4j.CypherQuery(self.graph_db_conn, self.query)
+        # self.results = self.cypher_query_object.execute()
 
     def get_results_or_errors(self):
         """
         Returns self.results if results found, else give out errors, NotFound, DB Errors, etc
         """
-        return self.results.data[0]._values[0]
-
+        return map(lambda x:x[0], self.results["data"])
+        # return self.results["data"][0][0]
         # return self.results
-
 
 
 def facebook_graph_api_query(endpoint='/me', id=None, token=None, **kwargs):
@@ -303,13 +323,12 @@ def facebook_graph_api_query(endpoint='/me', id=None, token=None, **kwargs):
     if not token:
         return {}, False
     FB_BASE_URI = "https://graph.facebook.com"
-    id = id or '/me'
+    id = id or '/me' #ToDo Improve this
     params = {
         'access_token':token,
     }
     params.update(kwargs)
 
-    import requests
     response = requests.get(FB_BASE_URI + endpoint, params=params)
     return response.json(), True
 

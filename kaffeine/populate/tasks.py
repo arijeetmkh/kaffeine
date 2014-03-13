@@ -48,5 +48,4 @@ def new_user_graph_entry(user):
     #Call rel create in some loop logic to create friends
     pu.create_friends(user, existing_users)
 
-    #ToDo Create users in the graph
     return response

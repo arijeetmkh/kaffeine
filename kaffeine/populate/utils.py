@@ -239,12 +239,12 @@ class QueryFactory(Router):
                     # 3. Set new with_ident to 'r' beacuse we have MATCHed forcefully to Restaurant
                     # 4. Add the with_ident to the query string
                     self.query += "--(r:Restaurant)"
-                    self.query += " WHERE {ident}.name =~ '{where_params}'".format(ident=ident, where_params="|".join(where_params))
+                    self.query += " WHERE {ident}.name =~ '{where_params}'".format(ident=ident, where_params="|".join(where_params).replace("'", "\\'"))
                     with_ident = 'r'
                     self.query += " WITH {with_ident}".format(with_ident=with_ident)
                 elif where_params:
                     # Next item is either NOT a restaurant OR is a restaurant and has empty where params for restaurant
-                    self.query += " WHERE {ident}.name =~ '{where_params}'".format(ident=ident, where_params="|".join(where_params))
+                    self.query += " WHERE {ident}.name =~ '{where_params}'".format(ident=ident, where_params="|".join(where_params).replace("'", "\\'"))
 
                     # Enter only IF:
                         #   Current iteration is at most two less than total in route AND

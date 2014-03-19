@@ -1,47 +1,43 @@
-<!doctype html>
 {% load staticfiles %}
+<!DOCTYPE html>
 <html ng-app="SearchApp">
-  <head>
 
+  <head>
+    <meta charset="utf-8" />
+    <title></title>
     <script type="text/javascript" src="{% static "populate/angular.min.js" %}"></script>
     <script type="text/javascript" src="{% static "populate/search.js" %}"></script>
-
+    <style type="text/css">
+        input {
+            width: 40%;
+            height: 40px;
+            font-size: 28px;
+        }
+    </style>
   </head>
+
   <body>
+    <form ng-controller="autoSuggest" name="searchForm" method="post" action="/results/">
+                {% csrf_token %}
+                {% verbatim %}
+                {{ tagger.meta.q }} <input suggestor type="text" ng-model="inputPhrase" change="change(value)" tagger="tagger" placeholder="Search" required>
 
-    <div ng-controller="searchCtrl">
-        <panel callfunc="makeCall(message, number, network)" number="9911" network="network" ></panel>
-        <panel callfunc="makeCall(message, number, network)" number="9868" network="network"></panel>
-        <panel callfunc="makeCall(message, number, network)" number="9650" network="network"></panel>
+                <input type="hidden" name="searchInput" value="{{ tagger }}">
 
-    </div>
+            <br>
+                <div>
+                    <ul>
 
-        <form ng-controller="autoSuggest" name="searchForm" method="post" action="/results/">
-            {% csrf_token %}
-            {% verbatim %}
-            {{ tagger.meta.q }} <input type="text" name="searchInput" ng-model="model.inputPhrase" ng-change="sendRequest(model.inputPhrase)" required>
+                        <li ng-repeat="result in results" accept select="confirm(result)" ng-model="result">
+                            {{ result.name }} ({{ result.index|capitalize }})
+                        </li>
 
-            <input type="hidden" name="searchInput" value="{{ tagger }}">
-
-            <span ng-show="searchForm.searchInput.$error.required">Required!</span><br>
-
-                <tt>searchForm.searchInput.$valid = {{searchForm.searchInput.$valid}}</tt><br>
-                <tt>searchForm.searchInput.$error = {{searchForm.searchInput.$error}}</tt>
-
-        <br>
-            <div>
-                <ul>
-
-                    <li ng-repeat="result in results | filter:{name:model.inputPhrase}" ng-click="confirmTag(result.name, result.index, result.end_nodes)">
-                        {{ result.name }} ({{ result.index|capitalize }})
-                    </li>
-
-                </ul>
-                <span ng-model="results">{{ results }}</span>
-            </div>
-             {% endverbatim %}
-        </form>
-
+                    </ul>
+                    <span ng-model="results">{{ results }}</span>
+                </div>
+                 {% endverbatim %}
+            </form>
 
   </body>
+
 </html>

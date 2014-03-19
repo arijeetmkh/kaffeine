@@ -1,100 +1,42 @@
+/**
+ * Created with PyCharm.
+ * User: redskins80
+ * Date: 11/12/13
+ * Time: 10:30 PM
+ * To change this template use File | Settings | File Templates.
+ */
+
 var app = angular.module("SearchApp", []);
 
-app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
+app.controller("searchCtrl", function ($scope) {
 
-    $scope.tagger = {
-        'meta':{
-            "q":"", //Contains raw query entered in full
-            "last_token":{
-                "token":null, "type":null, "next_node":null
-            },
-            "pointer":0
-        },
-        'Restaurant':[],
-        'Subzone':[],
-        'Cuisine':[],
-        'Feature':[],
-        'Dish':[]
+    $scope.makeCall = function(message, number, network) {
+        alert(message + number + network);
     };
 
-    $scope.change = function(input) {
-        var args = {
-            "inputPhrase":$filter('lowercase')(input),
-            "index":($scope.tagger.meta.last_token.next_node ? $scope.tagger.meta.last_token.next_node : null), //Which elastic index to query
-            "label":null, //Confirms ajax request only to Elastic
-            "meta":$scope.tagger.meta
-        };
-        xhrFactory.searchService(args)
-            .then(function(data) {
-                $scope.results = data;
-            });
-    };
+    return $scope;
 
-    $scope.confirm = function(obj) {
-        index = $filter('capitalize')(obj.index);
-        $scope.$apply(function() {
-            index != 'Rel' ? $scope.tagger[index].push(obj.name):$scope.tagger.meta.last_token[index] = obj.name;
-            $scope.inputPhrase = $scope.inputPhrase.substr(0, $scope.tagger.meta.pointer) + obj.name;
-            $scope.tagger.meta.q += obj.name + " ";
-            $scope.tagger.meta.last_token.token = obj.name;
-            $scope.tagger.meta.last_token.type = index;
-            $scope.results = null;
-            $scope.inputPhrase += " ";
-            $scope.tagger.meta.pointer += $scope.tagger.meta.q.length - $scope.tagger.meta.pointer;
-        });
-        if (index != "Rel") {
-            xhrFactory.searchService({"label":index})//Sending label only makes sure request is sent to NEO search graph
-                .then(function(data) {
-                    //Append AND option into data returned by NEO search graph
-                    data[0] = {'name':'AND', 'index':'Rel', 'end_nodes':[$scope.tagger.meta.last_token.type]};
-//                    data['AND'] = {'index':'Rel', 'end_nodes':[$scope.tagger.meta.last_token.type]};
-                    $scope.results = data;
-
-                });
-        } else {
-            $scope.tagger.meta.last_token.next_node = obj.end_nodes.join(",").toLowerCase();
-        }
-    };
 });
 
-app.directive("suggestor", function() {
+app.directive("panel", function() {
     return {
-        restrict: 'A',
+        restrict:"E",
         scope: {
-            inp: '=ngModel',
-            change: '&',
-            tagger: '='
+            callfunc: "&",
+            number: "@",
+            network: "="
         },
-        link: function(scope, element) {
-
-            scope.$watch('inp', function(value) {
-                if(!value || value.length <= 1 || (scope.tagger.meta.last_token.type && scope.tagger.meta.last_token.type != "Rel")) {
-                    return; //Do nothing
-                } else {
-                    var toSend = value.substring(scope.tagger.meta.pointer);
-                    scope.change({'value':toSend});
-                }
-            });
+        template: '<span>Number is : {{ number }}</span>' +
+            '<select ng-model="network" ng-options="net for net in networks"></select>' +
+            '<input type="text" ng-model="inputTest">' +
+            '<button ng-click="callfunc({message:inputTest, number:number, network:network})">Call</button>',
+        link: function(scope) {
+            scope.networks = ["Airtel", "Idea", "Reliance"];
+            scope.network = scope.networks[0];
         }
-    };
+    }
 });
 
-app.directive("accept", function() {
-    return {
-        restrict: 'A',
-        scope: {
-            select: '&',
-            result: '=ngModel'
-        },
-        link: function(scope, element) {
-            element.bind('click', function() {
-                scope.select({'value':scope.result});
-                element[0].ownerDocument.forms[0][0].focus();
-
-            });
-        }
-    };
-});
 
 app.factory("xhrFactory", function($q, $http, $filter) {
 
@@ -185,6 +127,7 @@ app.factory("xhrFactory", function($q, $http, $filter) {
                         }
                     } else {
                         data.push(null);
+                        console.log(result);
                         for (var i=0; i<result.data.data.length;i++) {
                             // Data starts from i+1 since AND option is appended later at index 0
                             data.push({
@@ -203,8 +146,82 @@ app.factory("xhrFactory", function($q, $http, $filter) {
 });
 
 
-app.filter("capitalize", function() {
+app.controller("autoSuggest", function($scope, $filter, xhrFactory) {
+
+    $scope.tagger = {
+        'meta':{
+            "q":"", //Contains raw query entered in full
+            "last_token":{
+                "token":null, "type":null, "next_node":null
+            }
+        },
+        'Restaurant':[],
+        'Subzone':[],
+        'Cuisine':[],
+        'Feature':[],
+        'Dish':[]
+    };
+
+    $scope.sendRequest = function(inputPhrase) {
+
+        if (!inputPhrase || inputPhrase.length <=1 || ($scope.tagger.meta.last_token.type && $scope.tagger.meta.last_token.type != "Rel")) {
+            return;
+        }
+
+        //Enter this point only if not rel type
+
+        var args = {
+            "inputPhrase":$filter('lowercase')(inputPhrase),
+            "index":($scope.tagger.meta.last_token.next_node ? $scope.tagger.meta.last_token.next_node : null), //Which elastic index to query
+            "label":null, //Confirms ajax request only to Elastic
+            "meta":$scope.tagger.meta
+        };
+
+        xhrFactory.searchService(args)
+            .then(function(data) {
+                $scope.results = data;
+            });
+
+    };
+
+    $scope.confirmTag = function(name, index, endnode) {
+
+        index = $filter('capitalize')(index);
+        index != 'Rel' ? $scope.tagger[index].push(name):$scope.tagger.meta.last_token[index] = name;
+        $scope.tagger.meta.q += name + " ";
+        $scope.tagger.meta.last_token.token = name;
+        $scope.tagger.meta.last_token.type = index;
+        $scope.results = null;
+        $scope.model.inputPhrase = "";
+        // To fetch relationships we must make sure confirmed tag is NOT rel
+        if (index != "Rel") {
+            xhrFactory.searchService({"label":index})//Sending label only makes sure request is sent to NEO search graph
+                .then(function(data) {
+                    //Append AND option into data returned by NEO search graph
+                    data[0] = {'name':'AND', 'index':'Rel', 'end_nodes':[$scope.tagger.meta.last_token.type]};
+//                    data['AND'] = {'index':'Rel', 'end_nodes':[$scope.tagger.meta.last_token.type]};
+                    $scope.results = data;
+                })
+        } else {
+            $scope.tagger.meta.last_token.next_node = endnode.join(",").toLowerCase();
+        }
+    };
+    return $scope;
+});
+
+
+app.filter("capitalize", function () {
     return function(input) {
         return input.substring(0,1).toUpperCase() + input.substring(1);
-    };
+    }
+
 });
+
+//
+//function searchCtrl($scope) {
+//    $scope.searchPhrase = "Enter a Phrase";
+//
+//    $scope.suggest = function(rec) {
+//        alert($scope.input);
+//    }
+//}

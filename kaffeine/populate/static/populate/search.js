@@ -103,7 +103,7 @@ app.factory("xhrFactory", function($q, $http, $filter) {
             var config = {};
             var url = null;
 
-            var BASE_URL = "http://127.0.0.1:8000/suggest/";
+            var BASE_URL = "http://myapp.localhost:8000/suggest/";
             var params = {};
             if (args.label) {
                 config['params'] = {

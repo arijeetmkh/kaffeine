@@ -281,7 +281,7 @@ class QueryFactory(Router):
         """
         This method is responsible for using py2neo to run the queries
         """
-        RAW_CYPHER_QUERY = "http://127.0.0.1:7474/db/data/cypher"
+        CYPHER_REST_ENDPOINT = "http://127.0.0.1:7474/db/data/cypher"
 
         headers = {
             'content-type':'application/json',
@@ -291,10 +291,10 @@ class QueryFactory(Router):
             "query":self.query,
             "params":{}
         }
-        r = requests.post(RAW_CYPHER_QUERY, data=json.dumps(payload), headers=headers)
+        r = requests.post(CYPHER_REST_ENDPOINT, data=json.dumps(payload), headers=headers)
         try:
             self.results = r.json()
-            print self.results
+            # print self.results
         except ValueError:
             # Handle JSON could not be decoded
             pass
@@ -367,6 +367,30 @@ def create_friends(user, existing_friends):
 
         rel = graph_db.create((user_node, "FRIENDS", friend_created))
 
+
+def like_connection(id, user, remove=False):
+    """
+    Find the restaurant node from 'id' and find user node from 'user' and create the new relationship
+    """
+    graph_db = neo4j.GraphDatabaseService()
+    restaurant = graph_db.find("Restaurant", "_id", id).next()
+    user_node = get_current_user_node(user, graph_db)
+    path = user_node.get_or_create_path("LIKES", restaurant)
+
+    if remove:
+        path.relationships[0].delete()
+
+def get_current_user_node(user, graph_db=False, return_conn=False):
+    """
+    Get the current user node from the graph
+    """
+    if not graph_db:
+        graph_db = neo4j.GraphDatabaseService()
+    user_node = graph_db.find("User", "uid", user.social_auth.first().uid).next()
+    if return_conn:
+        return user_node, graph_db
+    else:
+        return user_node
 
 #ToDo Add getter and setters
 #ToDo Add overall superclass for control of flow

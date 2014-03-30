@@ -1,9 +1,12 @@
 from django.views.generic.base import View
+from django.views.generic.detail import DetailView
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import HttpResponse
 from django.contrib.auth.views import logout
+from django.views.decorators.csrf import csrf_exempt
 
+from . import models as pm, utils as pu
 from . import tasks as pt
 import pdb, elasticsearch, json, requests
 
@@ -19,12 +22,29 @@ class SearchResults(View):
         # t.route_seletor()
         # t.query_controller()
         # res = t.get_results_or_errors()
-        # pdb.set_trace()
-
         async_task = pt.dispatch.subtask((request.POST['searchInput'],)).apply_async()
 
         return render_to_response(self.template_name, {'id':async_task.id}, context_instance=RequestContext(request))
         # return render_to_response(self.template_name, {'id':res}, context_instance=RequestContext(request))
+
+
+class RestaurantDetail(DetailView):
+
+    model = pm.RestaurantStatic
+    template_name = "populate/detail.html"
+    context_object_name = "object"
+
+    def get_object(self, queryset=None):
+        #ToDo Handle any fetch errors
+        return pm.RestaurantStatic.objects.get(id=self.kwargs['slug'])
+
+    def get_context_data(self, **kwargs):
+        context = super(RestaurantDetail, self).get_context_data(**kwargs)
+        if self.request.user.is_authenticated():
+            user_node, graph_db = pu.get_current_user_node(self.request.user, return_conn=True)
+            restaurant = graph_db.find("Restaurant", "_id", self.kwargs['slug']).next()
+            context['user_like'] = bool(list(user_node.match_outgoing("LIKES", restaurant, 1)))
+        return context
 
 class NewUser(View):
 
@@ -85,6 +105,28 @@ def auto_suggest(request):
         # pdb.set_trace()
         return HttpResponse(content=json.dumps(response), content_type='application/json')
 
+@csrf_exempt
+def like_view(request, remove=False):
+    """
+    Call utility function to connect restaurant to user and send JSON response
+    """
+    try:
+        body = json.loads(request.body)
+        id = body['id']
+        pu.like_connection(id, request.user, remove)
+        content = {
+            'success':True
+        }
+    except Exception as err:
+        content = {
+            'success':False,
+            'error':{
+                'message':err.message
+            }
+        }
+        return HttpResponse(status=500, content_type='application/json', content=json.dumps(content))
+
+    return HttpResponse(status=200, content_type='application/json', content=json.dumps(content))
 
 def logout_view(request):
     logout(request)

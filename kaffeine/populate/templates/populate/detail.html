@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+{% load staticfiles %}
+<html ng-app="RestaurantDetails">
+<head>
+    <script src="{% static "populate/angular.min.js" %}"></script>
+    <script src="{% static "populate/details.js" %}"></script>
+    <title>Restaurant Detail</title>
+</head>
+<body ng-controller="DetailCtrl">
+    {{ object.name }}<br>
+    {{ object.subzone }}<br>
+    {{ object.address }}<br>
+    {% if backends.associated %}
+        {% if user_like %}
+            <a href="#" ng-click="like('{{ object.id }}', '{{ backends.associated.0.uid }}', 'true')">Un-Like!</a>
+        {% else %}
+            <a href="#" ng-click="unlike('{{ object.id }}', '{{ backends.associated.0.uid }}', 'false')">Like!</a>
+        {% endif %}
+    {% else %}
+        To like, <a href="/login/facebook">sign in</a>
+    {% endif %}
+</body>
+</html>

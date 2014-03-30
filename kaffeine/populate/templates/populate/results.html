@@ -15,7 +15,7 @@
         {% verbatim %}
         <ul>
             <li ng-repeat="result in data">
-                <strong>{{ result.name }}</strong>
+                <strong><a href="/restaurant/{{ result.id }}/">{{ result.name }}</a></strong>
                 <br>
                 {{ result.subzone }}
             </li>

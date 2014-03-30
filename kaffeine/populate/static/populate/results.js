@@ -11,7 +11,7 @@ app.factory("xhrFactory", function($q, $http) {
                 params:{id:id}
             });
         }
-    }
+    };
 });
 
 
@@ -28,6 +28,7 @@ app.controller("resultCtrl", function($scope, $timeout, xhrFactory) {
                     },2000);
                 } else if(results.data.status == "SUCCESS") {
                     //perform result parsing here
+                    console.log(results.data.data.data);
                     $scope.data = results.data.data.data;
 
                 } else {
@@ -39,6 +40,6 @@ app.controller("resultCtrl", function($scope, $timeout, xhrFactory) {
                 //update scope var using returned data
 
             });
-    }
+    };
 });
 

@@ -140,6 +140,7 @@ INSTALLED_APPS = (
     'populate',
     'djcelery',
     'social.apps.django_app.default',
+    'django_extensions',
     # Uncomment the next line to enable the admin:
     # 'django.contrib.admin',
     # Uncomment the next line to enable admin documentation:

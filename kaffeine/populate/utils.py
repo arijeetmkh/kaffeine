@@ -101,10 +101,9 @@ class PreProcessing(object):
         Call segregator
         :param tagger: Incoming POST (type String)
         """
-        tagger = json.loads(tagger)
-        # tagger = ast.literal_eval(tagger)
         self.errors = {}
 
+        tagger = json.loads(tagger)
         self.segregator(tagger)
 
 
@@ -113,7 +112,7 @@ class PreProcessing(object):
         Use tagger dict to separate out meta contents and tokens
         :param tagger: Dict containing tokens only
         """
-        self.meta = tagger.pop('meta')
+        self.meta = tagger.pop('meta') if bool(tagger) else None
         self.tokens = tagger
 
 
@@ -178,8 +177,13 @@ class Router(PreProcessing):
 class QueryFactory(Router):
 
     query = ""
+    cypher_headers = {
+        'content-type':'application/json',
+        'encoding':'utf-8'
+    }
 
-    def __init__(self, tagger, logger):
+
+    def __init__(self, tagger='{}', logger=None):
         self.graph_db_conn = neo4j.GraphDatabaseService('http://127.0.0.1:7474')
         self.logger = logger
         super(QueryFactory, self).__init__(tagger)
@@ -268,12 +272,10 @@ class QueryFactory(Router):
         self.query = self.query.strip()
 
 
-
     def query_post_processing(self):
         """
         Apply RETURN, SKIP and LIMIT operations to tail end of query
         """
-        #ToDo Check to see if r._id will always return correctly (r.NUM needed?)
         self.query += " RETURN r._id SKIP 0 LIMIT 20;"
 
 
@@ -283,15 +285,11 @@ class QueryFactory(Router):
         """
         CYPHER_REST_ENDPOINT = "http://127.0.0.1:7474/db/data/cypher"
 
-        headers = {
-            'content-type':'application/json',
-            'encoding':'utf-8'
-        }
         payload = {
             "query":self.query,
             "params":{}
         }
-        r = requests.post(CYPHER_REST_ENDPOINT, data=json.dumps(payload), headers=headers)
+        r = requests.post(CYPHER_REST_ENDPOINT, data=json.dumps(payload), headers=self.cypher_headers)
         try:
             self.results = r.json()
             # print self.results
@@ -310,6 +308,7 @@ class QueryFactory(Router):
         Returns self.results if results found, else give out errors, NotFound, DB Errors, etc
         """
         return map(lambda x:x[0], self.results["data"])
+        #ToDo Useless iteration can be solved by parsing on client side
         # return self.results["data"][0][0]
         # return self.results
 
@@ -384,6 +383,7 @@ def get_current_user_node(user, graph_db=False, return_conn=False):
     """
     Get the current user node from the graph
     """
+    #ToDo Check is user is a User object or not
     if not graph_db:
         graph_db = neo4j.GraphDatabaseService()
     user_node = graph_db.find("User", "uid", user.social_auth.first().uid).next()

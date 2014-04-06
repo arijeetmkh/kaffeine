@@ -22,9 +22,12 @@ app.factory("xhrFactory", function($q, $http) {
 
 app.controller("DetailCtrl", function($scope, xhrFactory) {
     $scope.like = function(id, uid, disconnect) {
+        console.log("clicked");
+
         xhrFactory.ajax_results(id, uid, disconnect)
             .success(function(response) {
                 //Do something here on success
+                console.log("doe");
             });
     };
 });

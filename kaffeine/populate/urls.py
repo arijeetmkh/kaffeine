@@ -8,7 +8,7 @@ from .ajax import FetchResults
 urlpatterns = patterns('populate.views',
                        url(r'^home/$', TemplateView.as_view(template_name="populate/prototype.html")),
                        url(r'^results/', SearchResults.as_view(), name='results'),
-                       url(r'^ajax_results/$', FetchResults.as_view(), name='ajax_results'),
+                       url(r'^ajax_results/(?P<page>\d{1})/$', FetchResults.as_view(), name='ajax_results'),
                        url(r'^welcome/$', NewUser.as_view(), name='new_user'),
                        url(r'^suggest/$', 'auto_suggest', name='suggestions'),
                        url(r'^logout/$', 'logout_view', name='logout'),

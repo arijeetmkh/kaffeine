@@ -197,6 +197,7 @@ SOCIAL_AUTH_FACEBOOK_SECRET = "78dd6a84c060877eee6d9e43d11b7419"
 SOCIAL_AUTH_FACEBOOK_SCOPE = ['email', 'user_friends']
 SOCIAL_AUTH_NEW_USER_REDIRECT_URL = "/welcome/"
 # SOCIAL_AUTH_USER_MODEL = 'django.contrib.auth.models.User'
+
 AUTHENTICATION_BACKENDS = (
     'social.backends.facebook.FacebookOAuth2',
     'django.contrib.auth.backends.ModelBackend',

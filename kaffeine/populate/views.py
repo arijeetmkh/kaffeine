@@ -18,12 +18,12 @@ class SearchResults(View):
 
     def post(self, request):
 
-        # t = QueryFactory(request.POST['searchInput'], "dummy logger")
+        # t = pu.QueryFactory(request.POST['searchInput'], "dummy logger")
         # t.route_seletor()
-        # t.query_controller()
-        # res = t.get_results_or_errors()
+        # # t.query_controller()
+        # # res = t.get_results_or_errors()
         async_task = pt.dispatch.subtask((request.POST['searchInput'],)).apply_async()
-
+        # pdb.set_trace()
         return render_to_response(self.template_name, {'id':async_task.id}, context_instance=RequestContext(request))
         # return render_to_response(self.template_name, {'id':res}, context_instance=RequestContext(request))
 

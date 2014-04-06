@@ -14,7 +14,7 @@
         {% if user_like %}
             <a href="#" ng-click="like('{{ object.id }}', '{{ backends.associated.0.uid }}', 'true')">Un-Like!</a>
         {% else %}
-            <a href="#" ng-click="unlike('{{ object.id }}', '{{ backends.associated.0.uid }}', 'false')">Like!</a>
+            <a href="#" ng-click="like('{{ object.id }}', '{{ backends.associated.0.uid }}', 'false')">Like!</a>
         {% endif %}
     {% else %}
         To like, <a href="/login/facebook">sign in</a>

@@ -7,7 +7,7 @@ var app = angular.module("SearchResults", []);
 app.factory("xhrFactory", function($q, $http) {
     return {
         ajax_results:function(id) {
-            return $http.get('/ajax_results/', {
+            return $http.get('/ajax_results/1/', {
                 params:{id:id}
             });
         }
@@ -15,7 +15,7 @@ app.factory("xhrFactory", function($q, $http) {
 });
 
 
-app.controller("resultCtrl", function($scope, $timeout, xhrFactory) {
+app.controller("resultCtrl", function($scope, $timeout,$http, xhrFactory) {
 
     $scope.init = function(id) {
         xhrFactory.ajax_results(id)

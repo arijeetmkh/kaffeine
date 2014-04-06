@@ -244,8 +244,9 @@ class QueryFactory(Router):
                     # 4. Add the with_ident to the query string
                     self.query += "--(r:Restaurant)"
                     self.query += " WHERE {ident}.name =~ '{where_params}'".format(ident=ident, where_params="|".join(where_params).replace("'", "\\'"))
-                    with_ident = 'r'
-                    self.query += " WITH {with_ident}".format(with_ident=with_ident)
+                    if loop_next(self.route, i+1):
+                        with_ident = 'r'
+                        self.query += " WITH {with_ident}".format(with_ident=with_ident)
                 elif where_params:
                     # Next item is either NOT a restaurant OR is a restaurant and has empty where params for restaurant
                     self.query += " WHERE {ident}.name =~ '{where_params}'".format(ident=ident, where_params="|".join(where_params).replace("'", "\\'"))
@@ -276,12 +277,12 @@ class QueryFactory(Router):
         """
         Apply RETURN, SKIP and LIMIT operations to tail end of query
         """
-        self.query += " RETURN r._id SKIP 0 LIMIT 20;"
-
+        # self.query += " RETURN r._id SKIP 0 LIMIT 20;"
+        self.query += " WITH r OPTIONAL MATCH (r)-[:LIKES]-(u:User)-[:FRIENDS]-(u2:User) WHERE u2.uid='100007914434193' RETURN r._id, collect(u.uid) as soc ORDER BY length(soc) DESC LIMIT 500"
 
     def query_executer(self):
         """
-        This method is responsible for using py2neo to run the queries
+        This method is responsible for using REST API to run the queries
         """
         CYPHER_REST_ENDPOINT = "http://127.0.0.1:7474/db/data/cypher"
 
@@ -307,7 +308,8 @@ class QueryFactory(Router):
         """
         Returns self.results if results found, else give out errors, NotFound, DB Errors, etc
         """
-        return map(lambda x:x[0], self.results["data"])
+        # return map(lambda x:x[0], self.results["data"])
+        return self.results['data']
         #ToDo Useless iteration can be solved by parsing on client side
         # return self.results["data"][0][0]
         # return self.results

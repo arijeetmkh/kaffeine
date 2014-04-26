@@ -25,7 +25,7 @@ class SearchResults(View):
         async_task = pt.dispatch.subtask((request.POST['searchInput'],)).apply_async()
         # pdb.set_trace()
         return render_to_response(self.template_name, {'id':async_task.id}, context_instance=RequestContext(request))
-        # return render_to_response(self.template_name, {'id':res}, context_instance=RequestContext(request))
+        # return render_to_response(self.template_name, {}, context_instance=RequestContext(request))
 
 
 class RestaurantDetail(DetailView):

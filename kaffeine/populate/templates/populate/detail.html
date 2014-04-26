@@ -10,8 +10,6 @@
     {{ object.name }}<br>
     {{ object.subzone }}<br>
     {{ object.address }}<br>
-    {{ object.cuisines }}<br>
-    {{ object.features }}<br>
     {% if backends.associated %}
         {% if user_like %}
             <a href="#" ng-click="like('{{ object.id }}', '{{ backends.associated.0.uid }}', 'true')">Un-Like!</a>

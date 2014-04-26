@@ -218,89 +218,55 @@ class QueryFactory(Router):
         with_ident = False
 
         for i,node_type in enumerate(self.route,1):
+            # self.logger.debug(self.query)
 
             if node_type is "Restaurant" and not bool(self.tokens['Restaurant']):
                 continue
+
             self.query += "MATCH "
-            pre_append = ""
 
             if with_ident:
-                pre_append += "({with_ident})--".format(with_ident=with_ident)
+                self.query += "({with_ident})--".format(with_ident=with_ident)
 
-            # where_params = []
+            ident = node_type[0].lower()
+            where_params = []
 
-            # for token in self.tokens[node_type]:
-            #     where_params.append('({token})'.format(token=token))
-            # else:
-            if loop_next(self.route, i) is "Restaurant" and not bool(self.tokens['Restaurant']):
-                # If the next node is Restaurant, and its tokens are empty, do the following..
-                # 1. Append --(r:Restaurant) to it
-                # 2. Perform any where operations
-                # 3. Set new with_ident to 'r' beacuse we have MATCHed forcefully to Restaurant
-                # 4. Add the with_ident to the query string
-                pre_append_2, where_text = [], []
-                if bool(self.tokens[node_type]):
-                    if node_type is "Restaurant":
-                        self.query += pre_append + "(r:Restaurant) "
-                        for token in self.tokens[node_type]:
-                            where_text.append('({token})'.format(token=token))
-                        self.query += "WHERE r.name=~'{where_params}'".format(where_params="|".join(where_text))
-                    else:
-                        for j,token in enumerate(self.tokens[node_type],1):
-                            ident = node_type[0].lower() + str(j)
-                            pre_append_2.append(pre_append + '({ident_counter}:{node_type})'.format(ident_counter=ident, node_type=node_type) + "--(r:Restaurant)")
-                            where_text.append("{ident_counter}.name='{token}'".format(ident_counter=ident, token=token))
-                        self.query += ",".join(pre_append_2)
-                        self.query += " WHERE "
-                        self.query += " AND ".join(where_text)
-                else:
-                    ident = node_type[0].lower()
-                    self.query += pre_append + "({ident}:{node_type})--(r:Restaurant)".format(ident=ident, node_type=node_type)
+            self.query += '({ident}:{node_type})'.format(ident=ident, node_type=node_type)
 
-                # self.query += " WHERE {ident}.name =~ '{where_params}'".format(ident=ident, where_params="|".join(where_params).replace("'", "\\'"))
-                if loop_next(self.route, i+1):
-
-                    with_ident = 'r'
-                    self.query += " WITH {with_ident}".format(with_ident=with_ident)
+            for token in self.tokens[node_type]:
+                where_params.append('({token})'.format(token=token))
             else:
-                # Next item is either NOT a restaurant OR is a restaurant and has empty where params for restaurant
-                pre_append_2, where_text = [], []
-                if bool(self.tokens[node_type]):
-                    if node_type is "Restaurant":
-                        self.query += pre_append + "(r:Restaurant) "
-                        for token in self.tokens[node_type]:
-                            where_text.append('({token})'.format(token=token))
-                        self.query += "WHERE r.name=~'{where_params}'".format(where_params="|".join(where_text))
-                    else:
-                        for j,token in enumerate(self.tokens[node_type],1):
-                            ident = node_type[0].lower() + str(j)
-                            pre_append_2.append(pre_append + "({ident_counter}:{node_type})".format(ident_counter=ident, node_type=node_type))
-                            where_text.append("{ident_counter}.name='{token}'".format(ident_counter=ident, token=token))
-                        self.query += ",".join(pre_append_2)
-                        self.query += " WHERE "
-                        self.query += " AND ".join(where_text)
-                else:
-                    ident = node_type[0].lower()
-                    self.query += pre_append + "({ident}:{node_type})".format(ident=ident, node_type=node_type)
+                if loop_next(self.route, i) is "Restaurant" and not bool(self.tokens['Restaurant']):
+                    # If the next node is Restaurant, and its tokens are empty, do the following..
+                    # 1. Append --(r:Restaurant) to it
+                    # 2. Perform any where operations
+                    # 3. Set new with_ident to 'r' beacuse we have MATCHed forcefully to Restaurant
+                    # 4. Add the with_ident to the query string
+                    self.query += "--(r:Restaurant)"
+                    self.query += " WHERE {ident}.name =~ '{where_params}'".format(ident=ident, where_params="|".join(where_params).replace("'", "\\'"))
+                    if loop_next(self.route, i+1):
+                        with_ident = 'r'
+                        self.query += " WITH {with_ident}".format(with_ident=with_ident)
+                elif where_params:
+                    # Next item is either NOT a restaurant OR is a restaurant and has empty where params for restaurant
+                    self.query += " WHERE {ident}.name =~ '{where_params}'".format(ident=ident, where_params="|".join(where_params).replace("'", "\\'"))
 
-                # self.query += " WHERE {ident}.name =~ '{where_params}'".format(ident=ident, where_params="|".join(where_params).replace("'", "\\'"))
-
-                # Enter only IF:
-                    #   Current iteration is at most two less than total in route AND
-                    #   Next Loop iteration exists in route
-                    #   OR
-                    #   Current iteration is atmost one less than total in route AND
-                    #   Next Loop iteration is not Restaurant
-                # Else:
-                    #
-                # if (i < route_len-1 and loop_next(self.route, i)) or (i < route_len and loop_next(self.route, i) is not "Restaurant"):
-                if loop_next(self.route, i):
-                    # Set with_ident to 'r' if Restaurant has occured already otherwise node_type[0].lower()
-                    with_ident = node_type[0].lower() if "Restaurant" not in self.route[:i] else 'r'
-                    self.query += " WITH {with_ident}".format(with_ident=with_ident)
-                # else:
-                #     with_ident = ident
-                #     self.query += " WITH {with_ident}".format(with_ident=with_ident)
+                    # Enter only IF:
+                        #   Current iteration is at most two less than total in route AND
+                        #   Next Loop iteration exists in route
+                        #   OR
+                        #   Current iteration is atmost one less than total in route AND
+                        #   Next Loop iteration is not Restaurant
+                    # Else:
+                        #
+                    # if (i < route_len-1 and loop_next(self.route, i)) or (i < route_len and loop_next(self.route, i) is not "Restaurant"):
+                    if loop_next(self.route, i):
+                        # Set with_ident to 'r' if Restaurant has occured already
+                        with_ident = ident if "Restaurant" not in self.route[:i] else 'r'
+                        self.query += " WITH {with_ident}".format(with_ident=with_ident)
+                    # else:
+                    #     with_ident = ident
+                    #     self.query += " WITH {with_ident}".format(with_ident=with_ident)
 
             self.query += " "
 

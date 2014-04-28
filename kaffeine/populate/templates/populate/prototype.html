@@ -19,23 +19,7 @@
   <body>
     <form ng-controller="autoSuggest" name="searchForm" method="post" action="/results/">
                 {% csrf_token %}
-                {% verbatim %}
-                {{ tagger.meta.q }} <input suggestor type="text" ng-model="inputPhrase" change="change(value)" tagger="tagger" placeholder="Search" required>
-
-                <input type="hidden" name="searchInput" value="{{ tagger }}">
-
-            <br>
-                <div>
-                    <ul>
-
-                        <li ng-repeat="result in results" accept select="confirm(result)" ng-model="result">
-                            {{ result.name }} ({{ result.index|capitalize }})
-                        </li>
-
-                    </ul>
-                    <span ng-model="results">{{ results }}</span>
-                </div>
-                 {% endverbatim %}
+                <input type="text" name="searchInput" ng-model="inputPhrase" placeholder="Search" required>
             </form>
 
   </body>

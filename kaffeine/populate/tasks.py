@@ -22,11 +22,14 @@ def test(self):
 @shared_task
 def dispatch(searchInput):
 
-    t = pu.QueryFactory(searchInput, logger)
-    t.route_seletor()
-    t.query_controller()
-    logger.info(t.query)
-    return  t.get_results_or_errors()
+    token_map, parser_input = pu.resolver(searchInput)
+
+    from .parser import build_tree
+    tree = build_tree(parser_input)
+
+
+    return tree, token_map
+
 
 @shared_task
 def new_user_graph_entry(user):

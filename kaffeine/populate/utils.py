@@ -5,7 +5,7 @@ from social.apps.django_app.default.models import UserSocialAuth
 from uuid import uuid4
 from py2neo import neo4j
 
-import ast, pdb,json
+import ast, pdb,json, re
 import requests, elasticsearch
 
 def generate_geoff():
@@ -315,6 +315,68 @@ class QueryFactory(Router):
         # return self.results
 
 
+def resolver(searchinput):
+
+    STOP_WORDS = (
+        "has",
+        "serving",
+        "near",
+        'and'
+    )
+
+    es = elasticsearch.Elasticsearch()
+    pattern = "|".join(STOP_WORDS)
+    split_string = re.split(pattern, searchinput, flags=re.IGNORECASE)
+    tokens = map(lambda x:x.strip(), split_string)
+    entity_counter = {'cuisine':-1, 'subzone':-1}
+    token_map = {}
+    parser_input = searchinput
+    for token in tokens:
+        #construct body
+        body = {
+            'query':{
+                'match_phrase':{
+                    "name":token
+                }
+            }
+        }
+        res = es.search(index='_all', doc_type='static', body=body, search_type='dfs_query_then_fetch')
+        value = res['hits']['hits'][0]['_source']['name']
+        index = res['hits']['hits'][0]['_index']
+        entity_counter[index] += 1
+        token_map[index + str(entity_counter[index])] = value
+        parser_input = re.sub(token, index + str(entity_counter[index]), parser_input, 1)
+
+    return (token_map, parser_input)
+
+
+def query_run(query, token_map):
+
+    cypher_headers = {
+        'content-type':'application/json',
+        'encoding':'utf-8'
+    }
+
+    CYPHER_REST_ENDPOINT = "http://127.0.0.1:7474/db/data/cypher"
+    results = None
+    payload = {
+        "query":query,
+        "params":token_map
+    }
+    r = requests.post(CYPHER_REST_ENDPOINT, data=json.dumps(payload), headers=cypher_headers)
+    try:
+        results = r.json()
+        # print self.results
+    except ValueError:
+        # Handle JSON could not be decoded
+        pass
+    except Exception:
+        # Handle any other exception
+        pass
+
+    return results
+
+
 def facebook_graph_api_query(endpoint='/me', id=None, token=None, **kwargs):
     """
     Query the facebook endpoint and return json data
@@ -393,6 +455,112 @@ def get_current_user_node(user, graph_db=False, return_conn=False):
         return user_node, graph_db
     else:
         return user_node
+
+
+
+class QueryGenerator(object):
+
+    raw_tuple = None
+    query = []
+    previous_type = None
+    where_params = {
+        'subzone_type':[],
+        'cuisine_type':[]
+    }
+
+    def __init__(self, tup):
+
+        self.raw_tuple = tup
+        self.where_params = {
+            'subzone_type':[],
+            'cuisine_type':[]
+        }
+        self.query = []
+        self.start(self.raw_tuple)
+
+    def start(self, tup=-1):
+        """
+        Initiate Query gen processes
+        """
+        tup = self.raw_tuple if tup == -1 else tup
+        #Base Condition
+        if not tup or not isinstance(tup, tuple):
+            return False
+
+
+        try:
+            getattr(self, tup[0])(tup)
+        except AttributeError:
+            pass
+        #Recursion
+        try:
+            if isinstance(tup[1], tuple):
+                self.start(tup[1])
+            elif isinstance(tup[2], tuple):
+                self.start(tup[2])
+            elif isinstance(tup[3], tuple):
+                self.start(tup[3])
+        except IndexError:
+            pass
+
+        # print tup
+        return True
+
+
+    def subzone_type(self, tup):
+
+        if len(tup)<=2:
+            if self.previous_type == tup[0]:
+                self.where_params[tup[0]].append("s.name={{{subzone}}}".format(subzone=tup[1]))
+                self.query.append("MATCH (s:Subzone)--(r:Restaurant) WHERE {subzone}".format(subzone=" OR ".join(self.where_params[tup[0]])))
+                self.where_params[tup[0]] = []
+            else:
+                self.query.append("MATCH (s:Subzone)--(r:Restaurant) WHERE s.name={{{subzone}}}".format(subzone=tup[1]))
+                return
+        else:
+            if isinstance(tup[2], tuple):
+                self.where_params[tup[0]].append("s.name={{{subzone}}}".format(subzone=tup[1]))
+                self.query.append("MATCH (s:Subzone)--(r:Restaurant) WHERE {subzone}".format(subzone=" OR ".join(self.where_params[tup[0]])))
+                self.where_params[tup[0]] = []
+                pass
+            elif tup[2] == 'and':
+                self.where_params[tup[0]].append("s.name={{{subzone}}}".format(subzone=tup[1]))
+                self.previous_type = tup[0]
+                return
+        #Reaching this stage means something has gone wrong
+
+    def cuisine_type(self, tup):
+
+        if len(tup) <= 2:
+            if self.previous_type == tup[0]:
+                self.where_params[tup[0]].append("(c:Cuisine {{name:{{{cuisine}}}}})--(r:Restaurant)".format(cuisine=tup[1]))
+                self.query.append("MATCH " + ",".join(self.where_params[tup[0]]))
+                self.where_params[tup[0]] = []
+            else:
+                self.query.append("MATCH (c:Cuisine)--(r:Restaurant) WHERE c.name={{{cuisine}}}".format(cuisine=tup[1]))
+        else:
+            if isinstance(tup[2], tuple):
+                self.where_params[tup[0]].append("(c:Cuisine {{name:{{{cuisine}}}}})--(r:Restaurant)".format(cuisine=tup[1]))
+                self.query.append("MATCH " + ",".join(self.where_params[tup[0]]))
+                self.where_params[tup[0]] = []
+            elif tup[2] == 'and':
+                self.where_params[tup[0]].append("(c:Cuisine {{name:{{{cuisine}}}}})--(r:Restaurant)".format(cuisine=tup[1]))
+                self.previous_type = tup[0]
+
+        #Reaching this stage means something has gone wrong
+
+    def post_processing(self):
+        """
+        Add end part of query
+        """
+        self.query.append("OPTIONAL MATCH (r)--(u:User)-[:FRIENDS]-(u2:User) WHERE u2.uid='{uid}' return r.name, collect(u.uid) as coll ORDER BY length(coll) DESC".format(uid="100007914434193"))
+
+
+    def get_result_or_errors(self):
+
+        self.post_processing()
+        return " WITH r ".join(self.query)
+
 
 #ToDo Add getter and setters
 #ToDo Add overall superclass for control of flow

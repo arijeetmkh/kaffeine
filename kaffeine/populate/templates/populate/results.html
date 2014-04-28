@@ -12,14 +12,17 @@
 {{ id }}
 
     <div ng-controller="resultCtrl" ng-init="init('{{ id }}')">
+
+        {{ results }}
+
         {% verbatim %}
-        <ul>
-            <li ng-repeat="result in data">
-                <strong><a href="/restaurant/{{ result.id }}/">{{ result.name }}</a></strong>
-                <br>
-                {{ result.subzone }}
-            </li>
-        </ul>
+{#        <ul>#}
+{#            <li ng-repeat="result in data">#}
+{#                <strong><a href="/restaurant/{{ result.id }}/">{{ result.name }}</a></strong>#}
+{#                <br>#}
+{#                {{ result.subzone }}#}
+{#            </li>#}
+{#        </ul>#}
         {% endverbatim %}
     </div>
 

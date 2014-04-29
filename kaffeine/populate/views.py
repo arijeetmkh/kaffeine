@@ -22,16 +22,10 @@ class SearchResults(View):
         # t.route_seletor()
         # # t.query_controller()
         # # res = t.get_results_or_errors()
-        # async_task = pt.dispatch.subtask((request.POST['searchInput'],)).apply_async()
+        async_task = pt.dispatch.subtask((request.POST['searchInput'],)).apply_async()
         # pdb.set_trace()
-        tree, token_map = pt.dispatch(request.POST['searchInput'])
-        q_ops = pu.QueryGenerator(tree)
-        query = q_ops.get_result_or_errors()
-        results = pu.query_run(query, token_map)
-        print tree
-        print query
-        print results
-        return render_to_response(self.template_name, {'results':results['data']}, context_instance=RequestContext(request))
+
+        return render_to_response(self.template_name, {'id':async_task.id}, context_instance=RequestContext(request))
         # return render_to_response(self.template_name, {'id':res}, context_instance=RequestContext(request))
 
 

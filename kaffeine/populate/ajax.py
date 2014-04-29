@@ -68,8 +68,7 @@ class FetchResults(View):
             results = self.request.session.get('results', None)
             if not results:
                 results = self.async_task.get()
-
-        p = Paginator(results, 20)
+        p = Paginator(results['data'], 20)
         self.response['pagination']['page_range'] = p.page_range
         try:
             page = p.page(int(self.page))
@@ -88,7 +87,6 @@ class FetchResults(View):
             self.response['pagination']['previous_page_number'] = page.previous_page_number()
 
         ids = map(lambda x:x[0], page.object_list)
-
         for i,restaurant in enumerate(sorted(pm.RestaurantStatic.objects.filter(id__in=ids), key=lambda x:ids.index(x.id))):
             append_dict = {'social':{}}
             for field in self.result_fields:

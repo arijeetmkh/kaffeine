@@ -23,12 +23,14 @@ def test(self):
 def dispatch(searchInput):
 
     token_map, parser_input = pu.resolver(searchInput)
-
     from .parser import build_tree
+
     tree = build_tree(parser_input)
+    q_ops = pu.QueryGenerator(tree)
+    query = q_ops.get_result_or_errors()
+    results = pu.query_run(query, token_map)
 
-
-    return tree, token_map
+    return results
 
 
 @shared_task

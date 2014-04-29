@@ -553,7 +553,7 @@ class QueryGenerator(object):
         """
         Add end part of query
         """
-        self.query.append("OPTIONAL MATCH (r)--(u:User)-[:FRIENDS]-(u2:User) WHERE u2.uid='{uid}' return r.name, collect(u.uid) as coll ORDER BY length(coll) DESC".format(uid="100007914434193"))
+        self.query.append("OPTIONAL MATCH (r)--(u:User)-[:FRIENDS]-(u2:User) WHERE u2.uid='{uid}' return r._id, collect(u.uid) as coll ORDER BY length(coll) DESC".format(uid="100007914434193"))
 
 
     def get_result_or_errors(self):

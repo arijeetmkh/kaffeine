@@ -31,7 +31,6 @@ class SearchResults(View):
         print tree
         print query
         print results
-        pdb.set_trace()
         return render_to_response(self.template_name, {'results':results['data']}, context_instance=RequestContext(request))
         # return render_to_response(self.template_name, {'id':res}, context_instance=RequestContext(request))
 

@@ -533,7 +533,7 @@ class QueryGenerator(object):
 
         if len(tup) <= 2:
             if self.previous_type == tup[0]:
-                self.where_params[tup[0]].append("(c:Cuisine {{name:{{{cuisine}}}}})--(r:Restaurant)".format(cuisine=tup[1]))
+                self.where_params[tup[0]].append("(c{unique_index}:Cuisine {{name:{{{cuisine}}}}})--(r:Restaurant)".format(cuisine=tup[1], unique_index=len(self.where_params[tup[0]])))
                 self.query.append("MATCH " + ",".join(self.where_params[tup[0]]))
                 self.where_params[tup[0]] = []
             else:
@@ -544,7 +544,7 @@ class QueryGenerator(object):
                 self.query.append("MATCH " + ",".join(self.where_params[tup[0]]))
                 self.where_params[tup[0]] = []
             elif tup[2] == 'and':
-                self.where_params[tup[0]].append("(c:Cuisine {{name:{{{cuisine}}}}})--(r:Restaurant)".format(cuisine=tup[1]))
+                self.where_params[tup[0]].append("(c{unique_index}:Cuisine {{name:{{{cuisine}}}}})--(r:Restaurant)".format(cuisine=tup[1], unique_index=len(self.where_params[tup[0]])))
                 self.previous_type = tup[0]
 
         #Reaching this stage means something has gone wrong

@@ -16,6 +16,7 @@ lucene-querybuilder==0.2
 mongoengine==0.8.7
 neomodel==0.3.6
 oauthlib==0.6.1
+ply==3.4
 psycopg2==2.5.2
 py2neo==1.6.4
 pydot==1.0.28

@@ -9,7 +9,7 @@ import json,pdb
 
 class FetchResults(View):
 
-    result_fields = ['id', 'name', 'subzone']
+    result_fields = ['id', 'name', 'subzone', 'cost', 'timings', 'address', 'cuisines']
     job_id = None
     async_task = None
     response = None

@@ -1,4 +1,4 @@
-Django==1.6
+Django==1.11.28
 amqp==1.4.3
 anyjson==0.3.3
 argparse==1.2.1

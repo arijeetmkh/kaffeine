@@ -11,7 +11,7 @@ elasticsearch==0.4.3
 flower==0.6.0
 ipython==1.1.0
 kombu==3.0.12
-logilab-common==0.60.0
+logilab-common==0.61.0
 lucene-querybuilder==0.2
 mongoengine==0.8.7
 neomodel==0.3.6
